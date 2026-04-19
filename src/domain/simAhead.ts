@@ -161,25 +161,40 @@ function ensureUserMakesPlayoffs(season: Season): Season {
   const userTeam = TEAM_BY_ID.get(season.userTeamId)
   if (!userTeam) return season
 
-  // Try swapping with the lowest playoff team first. If tiebreakers
-  // leave the user JUST outside the rebuilt seeds, escalate up the
-  // seed list (5th → 4th → ... → 1st) until the user is unambiguously
-  // in. Worst case after 6 iterations the user has the top seed's
-  // record, which is guaranteed playoff-qualifying.
+  // simToPostseason should always land the user at a non-bye seed (3-6).
+  // Top-2 seeds get a Wild Card bye — and the user explicitly opted to
+  // skip games, so granting them a bye on top of that is double-dipping.
+  // Try the lowest seed (6 = third wild card) first; escalate up to
+  // seed 3 (lowest division winner that still plays the WCS) only if
+  // tiebreakers keep leaving the user out. Never escalate to 1 or 2.
   let working = season
   let swapped = false
-  for (let attempt = 0; attempt < 6; attempt++) {
+
+  for (let targetSeed = 6; targetSeed >= 3; targetSeed--) {
     const seeds = computeLeagueSeeds(working, userTeam.league)
-    if (seeds.includes(season.userTeamId)) {
+    const userIdx = seeds.indexOf(season.userTeamId)
+    if (userIdx >= 2) {
+      // User is in playoffs at a non-bye seed — done.
       return swapped ? { ...working, recordSwapApplied: true } : working
     }
-    const targetIndex = Math.max(0, seeds.length - 1 - attempt)
-    const replaceTeamId = seeds[targetIndex]
+
+    // User is either out (idx -1) or has a bye (idx 0/1). Force a swap
+    // with the team currently at `targetSeed`.
+    const targetIdx = targetSeed - 1
+    if (targetIdx >= seeds.length) continue
+    const replaceTeamId = seeds[targetIdx]
+    if (replaceTeamId === season.userTeamId) {
+      // User is already at the target seed (shouldn't happen given
+      // userIdx check above, but safe guard).
+      continue
+    }
     working = swapTeamRecords(working, season.userTeamId, replaceTeamId)
     swapped = true
   }
-  // Defensive fallback (shouldn't reach here in practice).
-  return { ...working, recordSwapApplied: true }
+
+  // Edge case: user is somehow still top-2 after exhausting escalation.
+  // Accept it — refusing would either crash or leave them out entirely.
+  return swapped ? { ...working, recordSwapApplied: true } : working
 }
 
 function computeLeagueSeeds(season: Season, league: LeagueId): string[] {

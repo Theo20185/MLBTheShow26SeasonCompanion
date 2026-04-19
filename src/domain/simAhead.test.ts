@@ -82,6 +82,20 @@ describe('simToPostseason', () => {
     }
   })
 
+  it('never grants a Wild Card bye (top-2 seed) — even to teams that would naturally earn it', () => {
+    // simToPostseason is opt-in: the user explicitly chose to skip games.
+    // We don't reward that with a bye; they should always have to play
+    // the Wild Card Series at minimum.
+    for (let seed = 1; seed <= 5; seed++) {
+      const after = simToPostseason(freshSeason('NYY', seed))
+      const seeds = (after.bracket?.alSeeds ?? []).includes('NYY')
+        ? after.bracket!.alSeeds
+        : after.bracket!.nlSeeds
+      expect(seeds[0]).not.toBe('NYY')
+      expect(seeds[1]).not.toBe('NYY')
+    }
+  })
+
   it('clears lastSnapshot', () => {
     const after = simToPostseason(freshSeason())
     expect(after.lastSnapshot).toBeUndefined()

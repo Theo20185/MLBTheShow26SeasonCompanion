@@ -278,6 +278,21 @@ export const saveRoundTrip: Invariant = (season) => {
   return null
 }
 
+/** simToPostseason / simToWorldSeries must never grant the user a Wild Card bye. */
+export const noByeAfterRecordSwap: Invariant = (season) => {
+  if (!season.bracket || !season.recordSwapApplied) return null
+  const userTeam = TEAM_BY_ID.get(season.userTeamId)
+  if (!userTeam) return null
+  const seeds = userTeam.league === 'AL' ? season.bracket.alSeeds : season.bracket.nlSeeds
+  if (seeds[0] === season.userTeamId || seeds[1] === season.userTeamId) {
+    return {
+      name: 'noByeAfterRecordSwap',
+      message: `User ${season.userTeamId} got a bye seed after simToPostseason — should always land at seed 3-6 (no bye)`,
+    }
+  }
+  return null
+}
+
 /** All teams with division winners are actually division winners (top of their division). */
 export const divisionWinnersAreDivisionWinners: Invariant = (season) => {
   if (!season.bracket) return null
@@ -307,4 +322,5 @@ export const ALL_INVARIANTS: Invariant[] = [
   userStateMachine,
   saveRoundTrip,
   divisionWinnersAreDivisionWinners,
+  noByeAfterRecordSwap,
 ]
