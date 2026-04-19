@@ -29,7 +29,7 @@ import {
   type SeriesGameResult,
   type SeriesRound,
 } from './bracket'
-import type { Game, Season } from './types'
+import type { Game, PreReportSnapshot, Season } from './types'
 
 // Synthetic gamePk namespace for postseason games (avoids collisions
 // with MLB's regular-season gamePks which top out around 800k).
@@ -187,6 +187,21 @@ export function reportUserPostseasonGame(
   const next = getNextUserPostseasonGame(season)
   if (!next) return season
 
+  // Snapshot pre-report state so Undo can roll back the user game,
+  // every parallel-series sim, any round transition, and the WS-final
+  // status/champion flip in one operation.
+  const snapshot: PreReportSnapshot = {
+    gameId: next.gamePk,
+    currentDate: season.currentDate,
+    rngSeed: season.rngSeed,
+    teamRecords: season.teamRecords.map((r) => ({ ...r })),
+    headToHead: deepCloneH2H(season.headToHead),
+    bracket: deepCloneBracket(season.bracket),
+    postseasonGames: (season.postseasonGames ?? []).map((g) => ({ ...g })),
+    status: season.status,
+    champion: season.champion,
+  }
+
   const userTeamId = season.userTeamId
   const userIsHome = next.homeTeamId === userTeamId
 
@@ -247,6 +262,7 @@ export function reportUserPostseasonGame(
     rngSeed: seed,
     bracket,
     postseasonGames: [...(season.postseasonGames ?? []), userGameRecord],
+    lastSnapshot: snapshot,
   }
 
   // If the user's series ended this turn, silently sim out any
@@ -332,4 +348,25 @@ export function simRemainingPostseason(season: Season): Season {
 export function teamLabel(teamId: string): string {
   const t = TEAM_BY_ID.get(teamId)
   return t ? t.name : teamId
+}
+
+function deepCloneH2H(h2h: Season['headToHead']): Season['headToHead'] {
+  const out: Season['headToHead'] = {}
+  for (const a of Object.keys(h2h)) {
+    out[a] = { ...h2h[a] }
+  }
+  return out
+}
+
+function deepCloneBracket(b: Bracket): Bracket {
+  return {
+    alSeeds: [...b.alSeeds],
+    nlSeeds: [...b.nlSeeds],
+    series: b.series.map((s) => ({
+      ...s,
+      results: s.results.map((r) => ({ ...r })),
+    })),
+    currentRound: b.currentRound,
+    champion: b.champion,
+  }
 }

@@ -151,6 +151,76 @@ describe('reportUserPostseasonGame', () => {
   })
 })
 
+describe('postseason Undo (via lastSnapshot + undoLastReport)', () => {
+  it('writes a snapshot capturing bracket + status before each report', () => {
+    let season = seedSeasonWithRealisticRecords('NYY')
+    season = startPostseason(season)
+    if (!isUserStillAlive(season)) return
+
+    expect(season.lastSnapshot).toBeUndefined()
+    season = reportUserPostseasonGame(season, true)
+    expect(season.lastSnapshot).toBeDefined()
+    expect(season.lastSnapshot?.bracket).toBeDefined()
+    expect(season.lastSnapshot?.status).toBe('postseason')
+  })
+
+  it('undoLastReport rolls back parallel-series sims and any round transition', async () => {
+    const { undoLastReport } = await import('./reportGame')
+    let season = seedSeasonWithRealisticRecords('NYY')
+    season = startPostseason(season)
+    if (!isUserStillAlive(season)) return
+
+    const beforeBracket = JSON.stringify(season.bracket)
+    const beforeRng = season.rngSeed
+    const beforeStatus = season.status
+    const beforePostseasonGames = season.postseasonGames?.length ?? 0
+
+    season = reportUserPostseasonGame(season, true)
+    // After report: bracket has advanced (at minimum the user's series),
+    // rngSeed has moved, postseasonGames has grown.
+    expect(JSON.stringify(season.bracket)).not.toBe(beforeBracket)
+    expect(season.rngSeed).not.toBe(beforeRng)
+    expect(season.postseasonGames!.length).toBe(beforePostseasonGames + 1)
+
+    const undone = undoLastReport(season)!
+    expect(undone).not.toBeNull()
+    expect(JSON.stringify(undone.bracket)).toBe(beforeBracket)
+    expect(undone.rngSeed).toBe(beforeRng)
+    expect(undone.status).toBe(beforeStatus)
+    expect(undone.postseasonGames!.length).toBe(beforePostseasonGames)
+    expect(undone.lastSnapshot).toBeUndefined()
+  })
+
+  it('a re-report after undo with the OPPOSITE result produces different bracket state', async () => {
+    const { undoLastReport } = await import('./reportGame')
+    let season = seedSeasonWithRealisticRecords('NYY')
+    season = startPostseason(season)
+    if (!isUserStillAlive(season)) return
+
+    const winSeason = reportUserPostseasonGame(season, true)
+    const undone = undoLastReport(winSeason)!
+    const lossSeason = reportUserPostseasonGame(undone, false)
+
+    // The user series's first result should differ between win and loss reports.
+    const winSeries = winSeason.bracket!.series.find((s) =>
+      s.highSeedTeamId === 'NYY' || s.lowSeedTeamId === 'NYY'
+    )!
+    const lossSeries = lossSeason.bracket!.series.find((s) =>
+      s.highSeedTeamId === 'NYY' || s.lowSeedTeamId === 'NYY'
+    )!
+    const winFirst = winSeries.results[0]
+    const lossFirst = lossSeries.results[0]
+    // Whichever side NYY was on, the win/loss for them should be opposite.
+    const userWasHomeInWin = winSeries.highSeedTeamId === 'NYY'
+      ? winSeries.results.length > 0 && winFirst.homeWon
+      : winSeries.results.length > 0 && !winFirst.homeWon
+    const userWasHomeInLoss = lossSeries.highSeedTeamId === 'NYY'
+      ? lossSeries.results.length > 0 && lossFirst.homeWon
+      : lossSeries.results.length > 0 && !lossFirst.homeWon
+    expect(userWasHomeInWin).not.toBe(userWasHomeInLoss)
+  })
+})
+
 describe('simRemainingPostseason', () => {
   it('produces a champion when run from any state', () => {
     let season = seedSeasonWithRealisticRecords()

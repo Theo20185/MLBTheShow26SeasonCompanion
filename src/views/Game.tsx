@@ -23,6 +23,7 @@ import {
   isUserStillAlive,
   startPostseason,
 } from '../domain/postseason'
+import { getUserDisplay, fullLabel } from '../domain/userDisplay'
 import type { Season, BoxScore } from '../domain/types'
 import type { BoxScoreInput } from '../domain/boxScore'
 
@@ -120,10 +121,10 @@ export function Game() {
     )
   }
 
-  const userTeam = TEAM_BY_ID.get(season.userTeamId)!
+  const userTeamMeta = TEAM_BY_ID.get(season.userTeamId)!
   const userIsHome = next.homeTeamId === season.userTeamId
   const opponentId = userIsHome ? next.awayTeamId : next.homeTeamId
-  const opponent = TEAM_BY_ID.get(opponentId)!
+  const opponentDisplay = getUserDisplay(season, opponentId)
   const park = BALLPARK_BY_ID.get(next.parkId)
   const playedCount = season.userGames.filter((g) => g.status === 'played').length
   const userRecord = season.teamRecords.find((r) => r.teamId === season.userTeamId)!
@@ -238,7 +239,7 @@ export function Game() {
           {rankInfo && (
             <>
               {' · '}
-              {ordinal(rankInfo.rank)} {userTeam.league} {userTeam.division}
+              {ordinal(rankInfo.rank)} {userTeamMeta.league} {userTeamMeta.division}
               {rankInfo.gamesBack > 0 && ` (-${rankInfo.gamesBack})`}
             </>
           )}
@@ -250,11 +251,11 @@ export function Game() {
           className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg"
         >
           <div className="text-center text-xs uppercase tracking-wider text-slate-400">
-            {userIsHome ? 'vs.' : '@'}{' '}
-            <span data-testid="opponent-name">{opponent.name}</span>
+            {fullLabel(season, season.userTeamId)} {userIsHome ? 'host' : '@'}{' '}
+            <span data-testid="opponent-name">{opponentDisplay.name}</span>
           </div>
           <div className="mt-2 text-center text-base text-slate-300">
-            {opponent.city} {opponent.name} ({opponentWins}-{opponentLosses})
+            {opponentDisplay.city} {opponentDisplay.name} ({opponentWins}-{opponentLosses})
           </div>
           <div className="my-4 text-center text-2xl font-semibold">
             <span data-testid="venue-name">

@@ -5,12 +5,16 @@ import { TEAM_MAP, TEAM_BY_ID } from '../data/teamIdMap'
 import { TEAM_BASE_OVRS } from '../data/bundledData'
 import { BALLPARK_BY_TEAM_ID } from '../data/ballparks'
 import { getTeamSchedule, getOpeningDay } from './scheduleLoader'
-import type { Season, TeamRecord, Game } from './types'
+import type { Season, TeamRecord, Game, UserSquad } from './types'
 
 const ROSTER_SNAPSHOT_ID = '2026-launch'
 
 export interface CreateSeasonOptions {
   userTeamId: string
+  /** DD squad identity. If omitted, falls back to the MLB team's name/abbrev. */
+  userSquad?: UserSquad
+  /** DD squad OVR override; written into ovrOverrides[userTeamId] if provided. */
+  userSquadOvr?: number
   /** Optional fixed RNG seed for deterministic test runs. */
   rngSeed?: number
   /** Optional fixed createdAt for deterministic test runs. */
@@ -46,6 +50,11 @@ export function createSeason(opts: CreateSeasonOptions): Season {
     baseOvrSnapshot[t.id] = TEAM_BASE_OVRS[t.id]
   }
 
+  const ovrOverrides: Record<string, number> = {}
+  if (typeof opts.userSquadOvr === 'number') {
+    ovrOverrides[userTeamId] = clampOvr(opts.userSquadOvr)
+  }
+
   const userGames: Game[] = getTeamSchedule(userTeamId).map((g) => {
     const park = BALLPARK_BY_TEAM_ID.get(g.homeTeamId)
     if (!park) {
@@ -67,12 +76,13 @@ export function createSeason(opts: CreateSeasonOptions): Season {
     id,
     year: 2026,
     userTeamId,
+    userSquad: opts.userSquad,
     startDate: openingDay,
     currentDate: openingDay,
     status: 'regular',
     rngSeed,
     baseOvrSnapshot,
-    ovrOverrides: {},
+    ovrOverrides,
     rosterSnapshotId: ROSTER_SNAPSHOT_ID,
     userGames,
     teamRecords,
@@ -82,4 +92,9 @@ export function createSeason(opts: CreateSeasonOptions): Season {
 
 function newSeed(): number {
   return Math.floor(Math.random() * 0xfffffff)
+}
+
+function clampOvr(n: number): number {
+  if (Number.isNaN(n)) return 75
+  return Math.max(40, Math.min(99, Math.round(n)))
 }

@@ -5,8 +5,8 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { loadSeason, listSeasons } from '../domain/seasonStore'
 import { getStandingsForDivision } from '../domain/standings'
+import { getUserDisplay } from '../domain/userDisplay'
 import type { LeagueId, DivisionId } from '../data/teamIdMap'
-import { TEAM_BY_ID } from '../data/teamIdMap'
 
 const LEAGUES: LeagueId[] = ['AL', 'NL']
 const DIVISIONS: DivisionId[] = ['East', 'Central', 'West']
@@ -58,17 +58,21 @@ export function Standings() {
                     </thead>
                     <tbody>
                       {ranks.map((e) => {
-                        const team = TEAM_BY_ID.get(e.teamId)!
-                        const isUser = e.teamId === season.userTeamId
+                        const display = getUserDisplay(season, e.teamId)
                         return (
                           <tr
                             key={e.teamId}
                             className={`border-t border-slate-800 ${
-                              isUser ? 'bg-emerald-900/20 text-emerald-100' : ''
+                              display.isUser ? 'bg-emerald-900/20 text-emerald-100' : ''
                             }`}
                           >
                             <td className="py-1.5">
-                              {team.city} {team.name}
+                              {display.city ? `${display.city} ${display.name}` : display.name}
+                              {display.isUser && (
+                                <span className="ml-1 text-xs text-emerald-400">
+                                  ({display.abbrev})
+                                </span>
+                              )}
                             </td>
                             <td className="text-center">{e.wins}</td>
                             <td className="text-center">{e.losses}</td>

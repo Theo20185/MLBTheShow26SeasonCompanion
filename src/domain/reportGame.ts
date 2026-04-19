@@ -125,6 +125,7 @@ export function undoLastReport(season: Season): Season | null {
   const snap = season.lastSnapshot
   if (!snap) return null
 
+  // Regular-season game: flip the user game back to scheduled.
   const userGames = season.userGames.map((g) =>
     g.gamePk === snap.gameId
       ? { ...g, status: 'scheduled' as const, result: undefined }
@@ -140,6 +141,24 @@ export function undoLastReport(season: Season): Season | null {
     userGames,
     lastSnapshot: undefined,
   }
+
+  // Postseason fields, if the snapshot captured them. The user might have
+  // been on the WS-final game, in which case status flipped from
+  // 'postseason' to 'complete' and champion was set; restore both.
+  if (snap.bracket !== undefined) {
+    restored.bracket = snap.bracket
+  }
+  if (snap.postseasonGames !== undefined) {
+    restored.postseasonGames = snap.postseasonGames
+  }
+  if (snap.status !== undefined) {
+    restored.status = snap.status
+  }
+  // Champion is set to undefined when restoring a pre-WS-final state.
+  if (snap.bracket !== undefined) {
+    restored.champion = snap.champion
+  }
+
   // Also clear the lastSimmedDate cursor so simulateNonUserGamesUpTo
   // re-derives correctly on the next report.
   delete (restored as unknown as { lastSimmedDate?: string }).lastSimmedDate

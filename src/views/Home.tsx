@@ -3,14 +3,18 @@
 // - If a save exists: "Continue" as primary, "New Season" as secondary.
 
 import { Link } from 'react-router-dom'
-import { listSeasons } from '../domain/seasonStore'
+import { listSeasons, loadSeason } from '../domain/seasonStore'
 import { TEAM_BY_ID } from '../data/teamIdMap'
 
 export function Home() {
   const seasons = listSeasons()
-  const activeSeasons = seasons.filter((s) => s.status !== 'complete')
-  const mostRecent = activeSeasons[0]
-  const team = mostRecent ? TEAM_BY_ID.get(mostRecent.userTeamId) : undefined
+  const activeEntry = seasons.find((s) => s.status !== 'complete')
+  const activeSeason = activeEntry ? loadSeason(activeEntry.id) : null
+  const mlbSlot = activeSeason
+    ? TEAM_BY_ID.get(activeSeason.userTeamId)
+    : undefined
+  const continueLabel = activeSeason?.userSquad?.name
+    ?? (mlbSlot ? `${mlbSlot.city} ${mlbSlot.name}` : 'Continue')
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-6 bg-slate-900 px-6 py-10 text-slate-100">
@@ -23,21 +27,26 @@ export function Home() {
       </p>
 
       <div className="mt-6 flex w-full max-w-xs flex-col gap-3">
-        {mostRecent && team && (
+        {activeSeason && (
           <Link
             to="/game"
             className="rounded-lg bg-emerald-600 px-6 py-4 text-center text-lg font-semibold text-white shadow-lg transition hover:bg-emerald-500 active:scale-[0.98]"
           >
             Continue
             <div className="mt-1 text-xs font-normal text-emerald-100">
-              {team.city} {team.name}
+              {continueLabel}
+              {mlbSlot && activeSeason.userSquad && (
+                <span className="text-emerald-200/70">
+                  {' '}— in for {mlbSlot.name}
+                </span>
+              )}
             </div>
           </Link>
         )}
         <Link
           to="/setup"
           className={`rounded-lg ${
-            mostRecent
+            activeSeason
               ? 'border border-slate-600 bg-slate-800 hover:bg-slate-700'
               : 'bg-emerald-600 shadow-lg hover:bg-emerald-500'
           } px-6 py-4 text-center text-lg font-semibold text-white transition active:scale-[0.98]`}

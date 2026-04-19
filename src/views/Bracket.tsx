@@ -10,10 +10,10 @@ import { loadSeason, listSeasons, saveSeason } from '../domain/seasonStore'
 import {
   buildBracket,
   countWinsBy,
-  teamCityName,
   type Series,
   type SeriesRound,
 } from '../domain/bracket'
+import { fullLabel, getUserDisplay } from '../domain/userDisplay'
 import {
   isUserStillAlive,
   simRemainingPostseason,
@@ -88,7 +88,7 @@ export function Bracket() {
               World Series Champion
             </div>
             <div className="mt-1 text-2xl font-bold text-amber-100">
-              {teamCityName(champion)}
+              {fullLabel(season, champion)}
             </div>
             {champion === userTeamId && (
               <div className="mt-1 text-sm text-amber-200">— that's you</div>
@@ -137,7 +137,7 @@ export function Bracket() {
                       }`}
                     >
                       <span className="w-5 text-slate-500">#{i + 1}</span>
-                      <span className="flex-1 truncate">{teamCityName(teamId)}</span>
+                      <span className="flex-1 truncate">{fullLabel(season, teamId)}</span>
                       {i < 2 && (
                         <span className="rounded-full bg-amber-700/40 px-2 py-0.5 text-xs text-amber-200">
                           Bye
@@ -171,7 +171,7 @@ export function Bracket() {
                     <SeriesCard
                       key={s.id}
                       series={s}
-                      userTeamId={userTeamId}
+                      season={season}
                     />
                   ))}
                 </ul>
@@ -184,10 +184,13 @@ export function Bracket() {
   )
 }
 
-function SeriesCard({ series, userTeamId }: { series: Series; userTeamId: string }) {
+function SeriesCard({ series, season }: { series: Series; season: Season }) {
   const wins = countWinsBy(series)
+  const userTeamId = season.userTeamId
   const userInSeries =
     series.highSeedTeamId === userTeamId || series.lowSeedTeamId === userTeamId
+  const high = getUserDisplay(season, series.highSeedTeamId)
+  const low = getUserDisplay(season, series.lowSeedTeamId)
   return (
     <li
       className={`rounded-lg border p-3 text-sm ${
@@ -205,7 +208,7 @@ function SeriesCard({ series, userTeamId }: { series: Series; userTeamId: string
             {series.league === 'inter' ? ' (host)' : ''}
           </div>
           <div className="truncate">
-            {teamCityName(series.highSeedTeamId)}
+            {high.city ? `${high.city} ${high.name}` : high.name}
           </div>
         </div>
         <div className="px-3 text-center font-mono text-base">
@@ -216,7 +219,7 @@ function SeriesCard({ series, userTeamId }: { series: Series; userTeamId: string
             #{series.lowSeedRank} {series.league !== 'inter' ? series.league : ''}
           </div>
           <div className="truncate">
-            {teamCityName(series.lowSeedTeamId)}
+            {low.city ? `${low.city} ${low.name}` : low.name}
           </div>
         </div>
       </div>
@@ -224,7 +227,7 @@ function SeriesCard({ series, userTeamId }: { series: Series; userTeamId: string
         <span>Best of {series.bestOf}</span>
         {series.winnerId ? (
           <span className="text-emerald-300">
-            Winner: {teamCityName(series.winnerId)}
+            Winner: {fullLabel(season, series.winnerId)}
           </span>
         ) : (
           <span>{series.results.length === 0 ? 'Not started' : 'In progress'}</span>

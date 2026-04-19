@@ -63,13 +63,28 @@ export interface PreReportSnapshot {
   teamRecords: TeamRecord[]
   headToHead: HeadToHead
   priorResult?: GameResult
+  // Postseason-only fields. Captured before lockstep parallel sims +
+  // round transitions run so Undo can restore the entire bracket and
+  // any status/champion change a WS-final report triggered.
+  bracket?: Bracket
+  postseasonGames?: Game[]
+  status?: SeasonStatus
+  champion?: string
+}
+
+export interface UserSquad {
+  /** Display name of the user's Diamond Dynasty squad (e.g. "Bombers"). */
+  name: string
+  /** 2-4 letter abbreviation of the squad (e.g. "BMB"). */
+  abbrev: string
 }
 
 export interface Season {
   id: string
   year: number
-  userTeamId: string
-  startDate: string       // opening day for the user team
+  userTeamId: string         // the MLB team slot the user replaced (e.g., "NYY")
+  userSquad?: UserSquad      // user's DD identity; missing on legacy saves (falls back to MLB team)
+  startDate: string          // opening day for the user team
   currentDate: string
   status: SeasonStatus
   rngSeed: number

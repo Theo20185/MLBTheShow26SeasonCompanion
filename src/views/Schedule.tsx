@@ -5,7 +5,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { loadSeason, listSeasons } from '../domain/seasonStore'
-import { TEAM_BY_ID } from '../data/teamIdMap'
+import { getUserDisplay } from '../domain/userDisplay'
 
 export function Schedule() {
   const season = useMemo(() => {
@@ -36,7 +36,7 @@ export function Schedule() {
           {season.userGames.map((g) => {
             const userIsHome = g.homeTeamId === season.userTeamId
             const oppId = userIsHome ? g.awayTeamId : g.homeTeamId
-            const opp = TEAM_BY_ID.get(oppId)!
+            const opp = getUserDisplay(season, oppId)
             const oppRec = season.teamRecords.find((r) => r.teamId === oppId)!
             const oppW = oppRec.firstHalfWins + oppRec.secondHalfWins
             const oppL = oppRec.firstHalfLosses + oppRec.secondHalfLosses

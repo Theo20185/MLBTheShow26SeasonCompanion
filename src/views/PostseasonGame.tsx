@@ -7,15 +7,16 @@
 
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { TEAM_BY_ID } from '../data/teamIdMap'
 import { BALLPARK_BY_ID } from '../data/ballparks'
 import {
   getNextUserPostseasonGame,
   getUserActiveSeries,
   reportUserPostseasonGame,
 } from '../domain/postseason'
+import { undoLastReport } from '../domain/reportGame'
 import { saveSeason } from '../domain/seasonStore'
 import { countWinsBy } from '../domain/bracket'
+import { getUserDisplay, fullLabel } from '../domain/userDisplay'
 import type { Season } from '../domain/types'
 
 const ROUND_NAMES: Record<string, string> = {
@@ -42,7 +43,8 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
   const userTeamId = season.userTeamId
   const userIsHome = game.homeTeamId === userTeamId
   const opponentId = userIsHome ? game.awayTeamId : game.homeTeamId
-  const opponent = TEAM_BY_ID.get(opponentId)!
+  const opponent = getUserDisplay(season, opponentId)
+  const userDisplay = getUserDisplay(season, userTeamId)
   const park = BALLPARK_BY_ID.get(game.parkId)
 
   const wins = countWinsBy(series)
@@ -63,6 +65,11 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
     commit(reportUserPostseasonGame(season, didUserWin))
   }
 
+  function handleUndo() {
+    const undone = undoLastReport(season)
+    if (undone) commit(undone)
+  }
+
   return (
     <>
       {/* Dramatic progress chip per PLAN.md §6.7 */}
@@ -80,11 +87,11 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
         className="rounded-2xl border border-amber-700 bg-slate-800 p-5 shadow-lg"
       >
         <div className="text-center text-xs uppercase tracking-wider text-amber-300">
-          {userIsHome ? 'vs.' : '@'}{' '}
+          {userDisplay.name} {userIsHome ? 'host' : '@'}{' '}
           <span data-testid="opponent-name">{opponent.name}</span>
         </div>
         <div className="mt-2 text-center text-base text-slate-300">
-          {opponent.city} {opponent.name}
+          {fullLabel(season, opponentId)}
         </div>
         <div className="my-4 text-center text-2xl font-semibold">
           <span data-testid="venue-name">{park?.name ?? game.homeTeamId}</span>
@@ -106,8 +113,8 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
         ) : (
           <div className="space-y-3">
             <p className="text-center text-xs text-slate-400">
-              Tap W or L. Postseason reports cascade through the bracket and
-              cannot be undone — be sure.
+              Tap W or L to commit. Undo is available for the most recent
+              postseason game if you misclick.
             </p>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -133,6 +140,16 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
               Cancel
             </button>
           </div>
+        )}
+
+        {season.lastSnapshot && (
+          <button
+            type="button"
+            onClick={handleUndo}
+            className="mt-3 block w-full text-center text-sm text-amber-400 underline"
+          >
+            Undo last game
+          </button>
         )}
 
         <Link
