@@ -2,7 +2,7 @@
 //   1. Pick the MLB team to replace (grid).
 //   2. Configure your DD squad identity: name, abbrev, OVR.
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   TEAM_MAP,
@@ -12,7 +12,11 @@ import {
 } from '../data/teamIdMap'
 import { TEAM_BASE_OVRS } from '../data/bundledData'
 import { createSeason } from '../domain/createSeason'
-import { saveSeason } from '../domain/seasonStore'
+import {
+  deleteAllInProgressSeasons,
+  listInProgressSeasons,
+  saveSeason,
+} from '../domain/seasonStore'
 import { ALLOWED_GAME_LENGTHS, DEFAULT_GAME_LENGTH, type GameLength } from '../domain/types'
 
 const LEAGUES: LeagueId[] = ['AL', 'NL']
@@ -31,6 +35,11 @@ export function Setup() {
       teamId={picked}
       onBack={() => setPicked(null)}
       onStart={(name, abbrev, ovr, gameLength) => {
+        // Wipe any in-progress seasons before creating the new one.
+        // Single-active-season model — without this, "New Season" silently
+        // accumulates entries and Settings → Delete leaves "Continue" still
+        // visible on Home for the older one.
+        deleteAllInProgressSeasons()
         const season = createSeason({
           userTeamId: picked,
           userSquad: { name, abbrev },
@@ -105,6 +114,9 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
   const team = TEAM_BY_ID.get(teamId)!
   const defaultOvr = TEAM_BASE_OVRS[teamId] ?? 75
 
+  // Surface any in-progress save the user is about to overwrite.
+  const inProgress = useMemo(() => listInProgressSeasons(), [])
+
   const [name, setName] = useState(team.name)
   const [abbrev, setAbbrev] = useState(team.id)
   const [ovr, setOvr] = useState<number>(defaultOvr)
@@ -142,7 +154,16 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
           your team in the standings.
         </p>
 
-        <div className="mt-6 space-y-4 rounded-2xl border border-slate-700 bg-slate-800 p-5">
+        {inProgress.length > 0 && (
+          <div className="mt-4 rounded-xl border border-amber-700 bg-amber-900/30 p-4 text-sm text-amber-100">
+            <strong className="block text-amber-200">
+              You have {inProgress.length === 1 ? 'an' : `${inProgress.length}`} in-progress {inProgress.length === 1 ? 'season' : 'seasons'}.
+            </strong>
+            Starting a new season will <em>delete</em> {inProgress.length === 1 ? 'it' : 'them'} — this can't be undone. If you want to keep playing your existing season, hit Back and tap Continue from the Home screen instead.
+          </div>
+        )}
+
+        <div className="mt-4 space-y-4 rounded-2xl border border-slate-700 bg-slate-800 p-5">
           <label className="block">
             <span className="text-sm text-slate-300">Squad name</span>
             <input

@@ -60,7 +60,33 @@ export function deleteSeason(id: string): void {
 }
 
 export function listSeasons(): SeasonIndexEntry[] {
-  return indexStore.get() ?? []
+  const entries = indexStore.get() ?? []
+  // Self-heal: prune index entries whose season payload is missing
+  // (e.g. partial corruption from DevTools or a bygone bug). Without
+  // this, the Home screen could show a "Continue" for a season that
+  // has no data — confusing and potentially crashy on click.
+  const live = entries.filter((e) => localStorage.getItem(`season:${e.id}`) !== null)
+  if (live.length !== entries.length) {
+    indexStore.set(live)
+  }
+  return live
+}
+
+export function listInProgressSeasons(): SeasonIndexEntry[] {
+  return listSeasons().filter((e) => e.status !== 'complete')
+}
+
+/**
+ * Deletes every in-progress season (status !== 'complete') and their
+ * index entries. Used by the Setup flow to enforce a single-active-
+ * season model — without this, "New Season" silently piles up
+ * entries the user can't see, which causes the Settings → Delete
+ * → "but Continue is still there" bug.
+ */
+export function deleteAllInProgressSeasons(): void {
+  for (const entry of listInProgressSeasons()) {
+    deleteSeason(entry.id)
+  }
 }
 
 function extractCreatedAtFromId(id: string): string {

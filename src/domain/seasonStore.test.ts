@@ -4,7 +4,9 @@ import {
   saveSeason,
   loadSeason,
   deleteSeason,
+  deleteAllInProgressSeasons,
   listSeasons,
+  listInProgressSeasons,
 } from './seasonStore'
 
 describe('seasonStore', () => {
@@ -57,5 +59,57 @@ describe('seasonStore', () => {
     saveSeason(season)
     // Simulate reload by re-importing the store (no-op in test) and reading again.
     expect(loadSeason(season.id)).not.toBeNull()
+  })
+})
+
+describe('listInProgressSeasons + deleteAllInProgressSeasons', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('listInProgressSeasons returns only seasons whose status is not complete', () => {
+    const a = createSeason({ userTeamId: 'NYY', createdAt: new Date('2026-04-01') })
+    const b = { ...createSeason({ userTeamId: 'BOS', createdAt: new Date('2026-04-02') }), status: 'complete' as const }
+    const c = createSeason({ userTeamId: 'LAD', createdAt: new Date('2026-04-03') })
+    saveSeason(a)
+    saveSeason(b)
+    saveSeason(c)
+    const ids = listInProgressSeasons().map((e) => e.id)
+    expect(ids).toContain(a.id)
+    expect(ids).toContain(c.id)
+    expect(ids).not.toContain(b.id)
+  })
+
+  it('deleteAllInProgressSeasons removes only in-progress ones, preserves complete', () => {
+    const a = createSeason({ userTeamId: 'NYY', createdAt: new Date('2026-04-01') })
+    const b = { ...createSeason({ userTeamId: 'BOS', createdAt: new Date('2026-04-02') }), status: 'complete' as const }
+    const c = createSeason({ userTeamId: 'LAD', createdAt: new Date('2026-04-03') })
+    saveSeason(a)
+    saveSeason(b)
+    saveSeason(c)
+
+    deleteAllInProgressSeasons()
+
+    expect(loadSeason(a.id)).toBeNull()
+    expect(loadSeason(b.id)).not.toBeNull() // complete preserved
+    expect(loadSeason(c.id)).toBeNull()
+    const indexIds = listSeasons().map((e) => e.id)
+    expect(indexIds).toEqual([b.id])
+  })
+})
+
+describe('listSeasons self-heals orphan index entries', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('removes index entries whose season data is missing', () => {
+    const season = createSeason({ userTeamId: 'NYY' })
+    saveSeason(season)
+    // Manually nuke the season payload but leave the index entry — simulating a
+    // partial corruption (e.g. someone cleared a single key in DevTools).
+    localStorage.removeItem(`season:${season.id}`)
+    // listSeasons should self-heal and return an empty list.
+    expect(listSeasons()).toEqual([])
   })
 })

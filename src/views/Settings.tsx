@@ -2,7 +2,7 @@
 // export/import save JSON. Multi-save management is a v1 stretch.
 
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   loadSeason,
   saveSeason,
@@ -14,6 +14,7 @@ import { TEAM_MAP } from '../data/teamIdMap'
 import { ALLOWED_GAME_LENGTHS, DEFAULT_GAME_LENGTH, type Season, type GameLength } from '../domain/types'
 
 export function Settings() {
+  const navigate = useNavigate()
   const [season, setSeason] = useState<Season | null>(() => {
     const idx = listSeasons()
     const active = idx.find((e) => e.status !== 'complete')
@@ -93,7 +94,8 @@ export function Settings() {
   function resetSeason() {
     if (!confirm('Delete this entire season? This cannot be undone.')) return
     deleteSeason(season!.id)
-    window.location.hash = '/'
+    setSeason(null)
+    navigate('/')
   }
 
   return (
