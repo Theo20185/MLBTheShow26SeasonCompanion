@@ -11,6 +11,15 @@
       name="description"
       content="Free browser-based MLB The Show 26 companion app for running a custom 162-game Diamond Dynasty season."
     />
+    <!--
+      Discourage caching index.html itself. Asset files (/assets/*.js, *.css)
+      use content-hashed filenames so they're safely cached forever; the only
+      thing that needs to refetch on every visit is this entry point so it
+      can pick up the latest hashes after a deploy.
+    -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>MLB The Show 26 Season Companion</title>
   </head>
   <body>
