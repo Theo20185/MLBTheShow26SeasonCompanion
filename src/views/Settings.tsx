@@ -10,8 +10,15 @@ import {
   deleteSeason,
 } from '../domain/seasonStore'
 import { effectiveOvr } from '../domain/simulator'
-import { TEAM_MAP } from '../data/teamIdMap'
-import { ALLOWED_GAME_LENGTHS, DEFAULT_GAME_LENGTH, type Season, type GameLength } from '../domain/types'
+import { TEAM_MAP, TEAM_BY_ID } from '../data/teamIdMap'
+import {
+  ALLOWED_GAME_LENGTHS,
+  DEFAULT_GAME_LENGTH,
+  DEFAULT_SQUAD_PRIMARY,
+  DEFAULT_SQUAD_SECONDARY,
+  type Season,
+  type GameLength,
+} from '../domain/types'
 
 export function Settings() {
   const navigate = useNavigate()
@@ -51,6 +58,29 @@ export function Settings() {
     const updated: Season = { ...season!, defaultGameLength: len }
     saveSeason(updated)
     setSeason(updated)
+  }
+
+  function setSquadColors(primary?: string, secondary?: string) {
+    const currentSquad = season!.userSquad ?? {
+      name: TEAM_BY_ID.get(season!.userTeamId)?.name ?? season!.userTeamId,
+      abbrev: season!.userTeamId,
+    }
+    const updated: Season = {
+      ...season!,
+      userSquad: {
+        ...currentSquad,
+        primaryColor: primary ?? currentSquad.primaryColor,
+        secondaryColor: secondary ?? currentSquad.secondaryColor,
+      },
+    }
+    saveSeason(updated)
+    setSeason(updated)
+  }
+
+  function applyTeamPreset(presetTeamId: string) {
+    const preset = TEAM_BY_ID.get(presetTeamId)
+    if (!preset) return
+    setSquadColors(preset.colors.primary, preset.colors.secondary)
   }
 
   function clearOverride(teamId: string) {
@@ -110,6 +140,74 @@ export function Settings() {
             Back to game
           </Link>
         </header>
+
+        <section className="mb-6 rounded-xl border border-slate-700 bg-slate-800 p-4">
+          <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-400">
+            Squad colors
+          </h2>
+          <p className="mb-3 text-xs text-slate-400">
+            Used for primary CTAs and the user-team highlight. Pick any
+            MLB team's palette as a preset, or fine-tune the swatches.
+          </p>
+          <label className="block">
+            <span className="text-xs text-slate-500">Use a team's colors</span>
+            <select
+              onChange={(e) => {
+                if (e.target.value) applyTeamPreset(e.target.value)
+                e.target.value = ''
+              }}
+              defaultValue=""
+              className="mt-1 w-full rounded-lg bg-slate-700 px-3 py-2 text-base"
+            >
+              <option value="">— pick a team —</option>
+              {[...TEAM_MAP].sort((a, b) => a.name.localeCompare(b.name)).map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.city} {t.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="text-xs text-slate-500">Primary</span>
+              <div className="mt-1 flex items-center gap-2">
+                <input
+                  type="color"
+                  value={season.userSquad?.primaryColor ?? DEFAULT_SQUAD_PRIMARY}
+                  onChange={(e) => setSquadColors(e.target.value, undefined)}
+                  className="h-10 w-12 cursor-pointer rounded border border-slate-600 bg-transparent"
+                  aria-label="Primary squad color"
+                />
+                <input
+                  type="text"
+                  value={season.userSquad?.primaryColor ?? DEFAULT_SQUAD_PRIMARY}
+                  onChange={(e) => setSquadColors(e.target.value, undefined)}
+                  maxLength={7}
+                  className="flex-1 rounded-lg bg-slate-700 px-3 py-2 font-mono text-sm uppercase"
+                />
+              </div>
+            </label>
+            <label className="block">
+              <span className="text-xs text-slate-500">Secondary</span>
+              <div className="mt-1 flex items-center gap-2">
+                <input
+                  type="color"
+                  value={season.userSquad?.secondaryColor ?? DEFAULT_SQUAD_SECONDARY}
+                  onChange={(e) => setSquadColors(undefined, e.target.value)}
+                  className="h-10 w-12 cursor-pointer rounded border border-slate-600 bg-transparent"
+                  aria-label="Secondary squad color"
+                />
+                <input
+                  type="text"
+                  value={season.userSquad?.secondaryColor ?? DEFAULT_SQUAD_SECONDARY}
+                  onChange={(e) => setSquadColors(undefined, e.target.value)}
+                  maxLength={7}
+                  className="flex-1 rounded-lg bg-slate-700 px-3 py-2 font-mono text-sm uppercase"
+                />
+              </div>
+            </label>
+          </div>
+        </section>
 
         <section className="mb-6 rounded-xl border border-slate-700 bg-slate-800 p-4">
           <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-400">

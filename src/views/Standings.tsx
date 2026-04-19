@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { loadSeason, listSeasons } from '../domain/seasonStore'
 import { getStandingsForDivision } from '../domain/standings'
 import { getUserDisplay } from '../domain/userDisplay'
+import { primaryTintStyle, themeForSeason } from './squadTheme'
 import type { LeagueId, DivisionId } from '../data/teamIdMap'
 
 const LEAGUES: LeagueId[] = ['AL', 'NL']
@@ -31,6 +32,8 @@ export function Standings() {
       </main>
     )
   }
+
+  const theme = themeForSeason(season)
 
   return (
     <main className="min-h-svh bg-slate-900 px-4 py-4 text-slate-100">
@@ -70,14 +73,16 @@ export function Standings() {
                         return (
                           <tr
                             key={e.teamId}
-                            className={`border-t border-slate-800 ${
-                              display.isUser ? 'bg-emerald-900/20 text-emerald-100' : ''
-                            }`}
+                            className="border-t border-slate-800"
+                            style={display.isUser ? primaryTintStyle(theme) : undefined}
                           >
                             <td className="py-1.5">
                               {display.city ? `${display.city} ${display.name}` : display.name}
                               {display.isUser && (
-                                <span className="ml-1 text-xs text-emerald-400">
+                                <span
+                                  className="ml-1 text-xs"
+                                  style={{ color: theme.primary }}
+                                >
                                   ({display.abbrev})
                                 </span>
                               )}

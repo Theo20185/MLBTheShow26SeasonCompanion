@@ -14,6 +14,7 @@ import {
   type SeriesRound,
 } from '../domain/bracket'
 import { fullLabel, getUserDisplay } from '../domain/userDisplay'
+import { primaryButtonStyle, primaryTintStyle, themeForSeason } from './squadTheme'
 import {
   isUserStillAlive,
   simRemainingPostseason,
@@ -75,6 +76,7 @@ export function Bracket() {
   const champion = season.champion ?? bracket.champion
   const userAlive = isUserStillAlive(season)
   const userTeamId = season.userTeamId
+  const theme = themeForSeason(season)
 
   return (
     <main className="min-h-svh bg-slate-900 px-4 py-4 text-slate-100">
@@ -115,7 +117,8 @@ export function Bracket() {
           <button
             type="button"
             onClick={beginPostseason}
-            className="mb-4 w-full rounded-lg bg-emerald-600 px-4 py-3 font-semibold text-white"
+            style={primaryButtonStyle(theme)}
+            className="mb-4 w-full rounded-lg px-4 py-3 font-semibold"
           >
             Begin Postseason
           </button>
@@ -144,22 +147,29 @@ export function Bracket() {
                   {league} Seeds
                 </h2>
                 <ol className="space-y-1 text-sm">
-                  {seeds.map((teamId, i) => (
-                    <li
-                      key={teamId}
-                      className={`flex items-center gap-2 ${
-                        teamId === userTeamId ? 'font-semibold text-emerald-300' : ''
-                      }`}
-                    >
-                      <span className="w-5 text-slate-500">#{i + 1}</span>
-                      <span className="flex-1 truncate">{fullLabel(season, teamId)}</span>
-                      {i < 2 && (
-                        <span className="rounded-full bg-amber-700/40 px-2 py-0.5 text-xs text-amber-200">
-                          Bye
+                  {seeds.map((teamId, i) => {
+                    const isUser = teamId === userTeamId
+                    return (
+                      <li
+                        key={teamId}
+                        className="flex items-center gap-2 rounded px-1"
+                        style={isUser ? primaryTintStyle(theme) : undefined}
+                      >
+                        <span className="w-5 text-slate-500">#{i + 1}</span>
+                        <span
+                          className={`flex-1 truncate ${isUser ? 'font-semibold' : ''}`}
+                          style={isUser ? { color: theme.primary } : undefined}
+                        >
+                          {fullLabel(season, teamId)}
                         </span>
-                      )}
-                    </li>
-                  ))}
+                        {i < 2 && (
+                          <span className="rounded-full bg-amber-700/40 px-2 py-0.5 text-xs text-amber-200">
+                            Bye
+                          </span>
+                        )}
+                      </li>
+                    )
+                  })}
                 </ol>
               </section>
             )

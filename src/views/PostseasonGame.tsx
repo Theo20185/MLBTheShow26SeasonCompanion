@@ -18,6 +18,7 @@ import { saveSeason } from '../domain/seasonStore'
 import { countWinsBy } from '../domain/bracket'
 import { getUserDisplay, fullLabel } from '../domain/userDisplay'
 import { formatGameDate, formatGameTime } from './formatGameTime'
+import { primaryButtonStyle, themeForSeason } from './squadTheme'
 import type { Season } from '../domain/types'
 
 const ROUND_NAMES: Record<string, string> = {
@@ -47,6 +48,7 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
   const opponent = getUserDisplay(season, opponentId)
   const userDisplay = getUserDisplay(season, userTeamId)
   const park = BALLPARK_BY_ID.get(game.parkId)
+  const theme = themeForSeason(season)
 
   const wins = countWinsBy(series)
   const userIsHigh = series.highSeedTeamId === userTeamId
@@ -107,7 +109,8 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
           <button
             type="button"
             onClick={() => setReportOpen(true)}
-            className="w-full rounded-xl bg-amber-600 px-6 py-4 text-lg font-semibold text-white shadow-lg active:scale-[0.98]"
+            style={primaryButtonStyle(theme)}
+            className="w-full rounded-xl px-6 py-4 text-lg font-semibold shadow-lg active:scale-[0.98]"
           >
             Report Result
           </button>
@@ -121,7 +124,8 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
               <button
                 type="button"
                 onClick={() => handleReport(true)}
-                className="rounded-xl bg-emerald-600 px-6 py-5 text-xl font-bold text-white active:scale-[0.98]"
+                style={primaryButtonStyle(theme)}
+                className="rounded-xl px-6 py-5 text-xl font-bold active:scale-[0.98]"
               >
                 Win
               </button>

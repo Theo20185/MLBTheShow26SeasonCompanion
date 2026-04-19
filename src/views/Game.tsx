@@ -22,6 +22,7 @@ import { PostseasonGame } from './PostseasonGame'
 import { SimAheadModal } from './SimAheadModal'
 import { NavBar } from './NavBar'
 import { formatGameDate, formatGameTime } from './formatGameTime'
+import { primaryButtonStyle, themeForSeason } from './squadTheme'
 import {
   advancePastByes,
   getNextUserPostseasonGame,
@@ -188,6 +189,7 @@ export function Game() {
   }
 
   const userTeamMeta = TEAM_BY_ID.get(season.userTeamId)!
+  const theme = themeForSeason(season)
   const userIsHome = next.homeTeamId === season.userTeamId
   const opponentId = userIsHome ? next.awayTeamId : next.homeTeamId
   const opponentDisplay = getUserDisplay(season, opponentId)
@@ -339,7 +341,8 @@ export function Game() {
             <button
               type="button"
               onClick={() => setReportPanelOpen(true)}
-              className="w-full rounded-xl bg-emerald-600 px-6 py-4 text-lg font-semibold text-white shadow-lg active:scale-[0.98]"
+              style={primaryButtonStyle(theme)}
+              className="w-full rounded-xl px-6 py-4 text-lg font-semibold shadow-lg active:scale-[0.98]"
             >
               Report Result
             </button>
@@ -360,7 +363,8 @@ export function Game() {
                 <button
                   type="button"
                   onClick={() => handleReport(true)}
-                  className="rounded-xl bg-emerald-600 px-6 py-5 text-xl font-bold text-white active:scale-[0.98]"
+                  style={primaryButtonStyle(theme)}
+                  className="rounded-xl px-6 py-5 text-xl font-bold active:scale-[0.98]"
                 >
                   Win
                 </button>

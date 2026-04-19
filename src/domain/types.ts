@@ -77,7 +77,19 @@ export interface UserSquad {
   name: string
   /** 2-4 letter abbreviation of the squad (e.g. "BMB"). */
   abbrev: string
+  /** Primary squad color (hex like "#003087") — used for CTAs, the user-team
+   *  highlight, and other "this is your team" affordances. Optional;
+   *  legacy saves and unset squads fall back to the app default emerald. */
+  primaryColor?: string
+  /** Secondary squad color (hex) — used for accents like the postseason
+   *  bracket nav chip and progress chip backgrounds. Falls back to amber. */
+  secondaryColor?: string
 }
+
+/** App-default colors used when the user hasn't picked any. Emerald + amber
+ *  match the original (pre-theming) visual style. */
+export const DEFAULT_SQUAD_PRIMARY = '#059669'
+export const DEFAULT_SQUAD_SECONDARY = '#d97706'
 
 /**
  * Default regulation length for games the user plays. The Show lets

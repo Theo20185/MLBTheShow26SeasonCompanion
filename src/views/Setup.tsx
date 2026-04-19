@@ -17,7 +17,11 @@ import {
   listInProgressSeasons,
   saveSeason,
 } from '../domain/seasonStore'
-import { ALLOWED_GAME_LENGTHS, DEFAULT_GAME_LENGTH, type GameLength } from '../domain/types'
+import {
+  ALLOWED_GAME_LENGTHS,
+  DEFAULT_GAME_LENGTH,
+  type GameLength,
+} from '../domain/types'
 
 const LEAGUES: LeagueId[] = ['AL', 'NL']
 const DIVISIONS: DivisionId[] = ['East', 'Central', 'West']
@@ -34,7 +38,7 @@ export function Setup() {
     <SquadSetup
       teamId={picked}
       onBack={() => setPicked(null)}
-      onStart={(name, abbrev, ovr, gameLength) => {
+      onStart={(name, abbrev, ovr, gameLength, primaryColor, secondaryColor) => {
         // Wipe any in-progress seasons before creating the new one.
         // Single-active-season model — without this, "New Season" silently
         // accumulates entries and Settings → Delete leaves "Continue" still
@@ -42,7 +46,7 @@ export function Setup() {
         deleteAllInProgressSeasons()
         const season = createSeason({
           userTeamId: picked,
-          userSquad: { name, abbrev },
+          userSquad: { name, abbrev, primaryColor, secondaryColor },
           userSquadOvr: ovr,
           defaultGameLength: gameLength,
         })
@@ -107,7 +111,14 @@ function TeamPicker({ onPick }: { onPick: (teamId: string) => void }) {
 interface SquadSetupProps {
   teamId: string
   onBack: () => void
-  onStart: (name: string, abbrev: string, ovr: number, gameLength: GameLength) => void
+  onStart: (
+    name: string,
+    abbrev: string,
+    ovr: number,
+    gameLength: GameLength,
+    primaryColor: string,
+    secondaryColor: string
+  ) => void
 }
 
 function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
@@ -121,7 +132,17 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
   const [abbrev, setAbbrev] = useState(team.id)
   const [ovr, setOvr] = useState<number>(defaultOvr)
   const [gameLength, setGameLength] = useState<GameLength>(DEFAULT_GAME_LENGTH)
+  // Default to the replaced team's brand colors (most users will keep them).
+  const [primaryColor, setPrimaryColor] = useState(team.colors.primary)
+  const [secondaryColor, setSecondaryColor] = useState(team.colors.secondary)
   const [error, setError] = useState<string | null>(null)
+
+  function applyTeamPreset(presetTeamId: string) {
+    const preset = TEAM_BY_ID.get(presetTeamId)
+    if (!preset) return
+    setPrimaryColor(preset.colors.primary)
+    setSecondaryColor(preset.colors.secondary)
+  }
 
   function handleSubmit() {
     const trimmedName = name.trim()
@@ -139,7 +160,7 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
       return
     }
     setError(null)
-    onStart(trimmedName, trimmedAbbrev, ovr, gameLength)
+    onStart(trimmedName, trimmedAbbrev, ovr, gameLength, primaryColor, secondaryColor)
   }
 
   return (
@@ -230,6 +251,86 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
               settings. You can change this later in Settings.
             </p>
           </label>
+
+          <div className="border-t border-slate-700 pt-4">
+            <span className="text-sm text-slate-300">Squad colors</span>
+            <p className="mt-1 text-xs text-slate-500">
+              Defaults to the {team.name}' colors. Pick any other MLB team's
+              palette below, or fine-tune the swatches yourself.
+            </p>
+            <label className="mt-3 block">
+              <span className="text-xs text-slate-400">Use a team's colors</span>
+              <select
+                onChange={(e) => {
+                  if (e.target.value) applyTeamPreset(e.target.value)
+                  e.target.value = ''  // reset so re-picking the same team re-applies
+                }}
+                defaultValue=""
+                className="mt-1 w-full rounded-lg bg-slate-700 px-3 py-2 text-base"
+              >
+                <option value="">— pick a team —</option>
+                {[...TEAM_MAP].sort((a, b) => a.name.localeCompare(b.name)).map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.city} {t.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-xs text-slate-400">Primary</span>
+                <div className="mt-1 flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    className="h-10 w-12 cursor-pointer rounded border border-slate-600 bg-transparent"
+                    aria-label="Primary squad color"
+                  />
+                  <input
+                    type="text"
+                    value={primaryColor}
+                    onChange={(e) => setPrimaryColor(e.target.value)}
+                    maxLength={7}
+                    className="flex-1 rounded-lg bg-slate-700 px-3 py-2 font-mono text-sm uppercase"
+                  />
+                </div>
+              </label>
+              <label className="block">
+                <span className="text-xs text-slate-400">Secondary</span>
+                <div className="mt-1 flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={secondaryColor}
+                    onChange={(e) => setSecondaryColor(e.target.value)}
+                    className="h-10 w-12 cursor-pointer rounded border border-slate-600 bg-transparent"
+                    aria-label="Secondary squad color"
+                  />
+                  <input
+                    type="text"
+                    value={secondaryColor}
+                    onChange={(e) => setSecondaryColor(e.target.value)}
+                    maxLength={7}
+                    className="flex-1 rounded-lg bg-slate-700 px-3 py-2 font-mono text-sm uppercase"
+                  />
+                </div>
+              </label>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <div
+                className="flex h-10 flex-1 items-center justify-center rounded-lg text-xs font-semibold"
+                style={{ backgroundColor: primaryColor, color: '#fff' }}
+              >
+                Primary preview
+              </div>
+              <div
+                className="flex h-10 flex-1 items-center justify-center rounded-lg text-xs font-semibold"
+                style={{ backgroundColor: secondaryColor, color: '#fff' }}
+              >
+                Secondary preview
+              </div>
+            </div>
+          </div>
 
           {error && (
             <p className="text-sm text-rose-400">{error}</p>

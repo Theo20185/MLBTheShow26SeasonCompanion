@@ -5,6 +5,7 @@
 import { Link } from 'react-router-dom'
 import { listSeasons, loadSeason } from '../domain/seasonStore'
 import { TEAM_BY_ID } from '../data/teamIdMap'
+import { primaryButtonStyle, themeForSeason } from './squadTheme'
 
 export function Home() {
   const seasons = listSeasons()
@@ -15,6 +16,7 @@ export function Home() {
     : undefined
   const continueLabel = activeSeason?.userSquad?.name
     ?? (mlbSlot ? `${mlbSlot.city} ${mlbSlot.name}` : 'Continue')
+  const theme = themeForSeason(activeSeason)
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-6 bg-slate-900 px-6 py-10 text-slate-100">
@@ -30,13 +32,14 @@ export function Home() {
         {activeSeason && (
           <Link
             to="/game"
-            className="rounded-lg bg-emerald-600 px-6 py-4 text-center text-lg font-semibold text-white shadow-lg transition hover:bg-emerald-500 active:scale-[0.98]"
+            style={primaryButtonStyle(theme)}
+            className="rounded-lg px-6 py-4 text-center text-lg font-semibold shadow-lg transition active:scale-[0.98]"
           >
             Continue
-            <div className="mt-1 text-xs font-normal text-emerald-100">
+            <div className="mt-1 text-xs font-normal opacity-80">
               {continueLabel}
               {mlbSlot && activeSeason.userSquad && (
-                <span className="text-emerald-200/70">
+                <span className="opacity-75">
                   {' '}— in for {mlbSlot.name}
                 </span>
               )}
