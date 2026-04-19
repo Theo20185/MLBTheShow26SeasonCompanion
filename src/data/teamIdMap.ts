@@ -78,3 +78,27 @@ export const TEAM_BY_MLB_STATS_ID = new Map(
 export const TEAM_BY_SHOW_SHORT_NAME = new Map(
   TEAM_MAP.map((t) => [t.showShortName, t])
 )
+
+/**
+ * Returns the first MLB team whose primary + secondary brand colors
+ * exactly match the given hex pair (case-insensitive). Used by the
+ * Squad Colors picker so the team-preset dropdown reflects the
+ * currently-active palette instead of always showing "pick a team."
+ * Returns null if the user has fine-tuned to a non-team palette.
+ */
+export function findTeamByColors(
+  primary: string,
+  secondary: string
+): TeamMapEntry | null {
+  const p = primary.toLowerCase()
+  const s = secondary.toLowerCase()
+  for (const t of TEAM_MAP) {
+    if (
+      t.colors.primary.toLowerCase() === p &&
+      t.colors.secondary.toLowerCase() === s
+    ) {
+      return t
+    }
+  }
+  return null
+}

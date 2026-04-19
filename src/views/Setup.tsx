@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   TEAM_MAP,
   TEAM_BY_ID,
+  findTeamByColors,
   type LeagueId,
   type DivisionId,
 } from '../data/teamIdMap'
@@ -259,16 +260,15 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
               palette below, or fine-tune the swatches yourself.
             </p>
             <label className="mt-3 block">
-              <span className="text-xs text-slate-400">Use a team's colors</span>
+              <span className="text-xs text-slate-400">Team color preset</span>
               <select
+                value={findTeamByColors(primaryColor, secondaryColor)?.id ?? '__custom'}
                 onChange={(e) => {
-                  if (e.target.value) applyTeamPreset(e.target.value)
-                  e.target.value = ''  // reset so re-picking the same team re-applies
+                  if (e.target.value !== '__custom') applyTeamPreset(e.target.value)
                 }}
-                defaultValue=""
                 className="mt-1 w-full rounded-lg bg-slate-700 px-3 py-2 text-base"
               >
-                <option value="">— pick a team —</option>
+                <option value="__custom">Custom colors</option>
                 {[...TEAM_MAP].sort((a, b) => a.name.localeCompare(b.name)).map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.city} {t.name}

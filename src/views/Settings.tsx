@@ -10,7 +10,7 @@ import {
   deleteSeason,
 } from '../domain/seasonStore'
 import { effectiveOvr } from '../domain/simulator'
-import { TEAM_MAP, TEAM_BY_ID } from '../data/teamIdMap'
+import { TEAM_MAP, TEAM_BY_ID, findTeamByColors } from '../data/teamIdMap'
 import {
   ALLOWED_GAME_LENGTHS,
   DEFAULT_GAME_LENGTH,
@@ -150,16 +150,20 @@ export function Settings() {
             MLB team's palette as a preset, or fine-tune the swatches.
           </p>
           <label className="block">
-            <span className="text-xs text-slate-500">Use a team's colors</span>
+            <span className="text-xs text-slate-500">Team color preset</span>
             <select
+              value={
+                findTeamByColors(
+                  season.userSquad?.primaryColor ?? DEFAULT_SQUAD_PRIMARY,
+                  season.userSquad?.secondaryColor ?? DEFAULT_SQUAD_SECONDARY
+                )?.id ?? '__custom'
+              }
               onChange={(e) => {
-                if (e.target.value) applyTeamPreset(e.target.value)
-                e.target.value = ''
+                if (e.target.value !== '__custom') applyTeamPreset(e.target.value)
               }}
-              defaultValue=""
               className="mt-1 w-full rounded-lg bg-slate-700 px-3 py-2 text-base"
             >
-              <option value="">— pick a team —</option>
+              <option value="__custom">Custom colors</option>
               {[...TEAM_MAP].sort((a, b) => a.name.localeCompare(b.name)).map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.city} {t.name}
