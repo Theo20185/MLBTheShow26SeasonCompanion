@@ -11,7 +11,7 @@ import {
 } from '../domain/seasonStore'
 import { effectiveOvr } from '../domain/simulator'
 import { TEAM_MAP } from '../data/teamIdMap'
-import type { Season } from '../domain/types'
+import { ALLOWED_GAME_LENGTHS, DEFAULT_GAME_LENGTH, type Season, type GameLength } from '../domain/types'
 
 export function Settings() {
   const [season, setSeason] = useState<Season | null>(() => {
@@ -37,6 +37,12 @@ export function Settings() {
       ...season!,
       ovrOverrides: { ...season!.ovrOverrides, [teamId]: clamped },
     }
+    saveSeason(updated)
+    setSeason(updated)
+  }
+
+  function setGameLength(len: GameLength) {
+    const updated: Season = { ...season!, defaultGameLength: len }
     saveSeason(updated)
     setSeason(updated)
   }
@@ -94,6 +100,37 @@ export function Settings() {
             Back to game
           </Link>
         </header>
+
+        <section className="mb-6 rounded-xl border border-slate-700 bg-slate-800 p-4">
+          <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-400">
+            Game length
+          </h2>
+          <p className="mb-3 text-xs text-slate-400">
+            Default regulation length for full-report box scores. Match the
+            inning count you use in MLB The Show's Vs. CPU settings.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {ALLOWED_GAME_LENGTHS.map((len) => {
+              const current = season.defaultGameLength ?? DEFAULT_GAME_LENGTH
+              return (
+                <button
+                  key={len}
+                  type="button"
+                  onClick={() => setGameLength(len)}
+                  className={`min-w-[56px] rounded-lg border px-3 py-2 font-semibold transition ${
+                    current === len
+                      ? 'border-emerald-500 bg-emerald-700 text-white'
+                      : 'border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600'
+                  }`}
+                  aria-label={`${len}-inning games`}
+                  aria-pressed={current === len}
+                >
+                  {len}
+                </button>
+              )
+            })}
+          </div>
+        </section>
 
         <section className="mb-6 rounded-xl border border-slate-700 bg-slate-800 p-4">
           <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-400">

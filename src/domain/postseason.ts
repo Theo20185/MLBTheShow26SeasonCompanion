@@ -277,7 +277,7 @@ export function reportUserPostseasonGame(
   return workingSeason
 }
 
-function simOutCurrentRound(season: Season): Season {
+export function simOutCurrentRound(season: Season): Season {
   if (!season.bracket) return season
   let seed = season.rngSeed
   const round = season.bracket.currentRound
@@ -298,7 +298,7 @@ function simOutCurrentRound(season: Season): Season {
   }
 }
 
-function maybeAdvanceRound(season: Season): Season {
+export function maybeAdvanceRound(season: Season): Season {
   if (!season.bracket) return season
   const currentRound = season.bracket.currentRound
   const inRound = season.bracket.series.filter((s) => s.round === currentRound)

@@ -31,6 +31,45 @@ describe('validateBoxScore', () => {
     expect(validateBoxScore({ ...short, shortened: true }).ok).toBe(true)
   })
 
+  it('accepts a 3-inning game when regulationLength is 3', () => {
+    const short: BoxScoreInput = {
+      inningsHome: [1, 0, 2],
+      inningsAway: [0, 0, 0],
+      hitsHome: 4,
+      hitsAway: 1,
+      errorsHome: 0,
+      errorsAway: 0,
+      shortened: false,
+    }
+    expect(validateBoxScore(short, { regulationLength: 3 }).ok).toBe(true)
+  })
+
+  it('rejects a 3-inning game when regulationLength is 9', () => {
+    const short: BoxScoreInput = {
+      inningsHome: [1, 0, 2],
+      inningsAway: [0, 0, 0],
+      hitsHome: 4,
+      hitsAway: 1,
+      errorsHome: 0,
+      errorsAway: 0,
+      shortened: false,
+    }
+    expect(validateBoxScore(short, { regulationLength: 9 }).ok).toBe(false)
+  })
+
+  it('rejects fewer than 3 innings even with regulationLength=3', () => {
+    const tooShort: BoxScoreInput = {
+      inningsHome: [1, 0],
+      inningsAway: [0, 0],
+      hitsHome: 1,
+      hitsAway: 0,
+      errorsHome: 0,
+      errorsAway: 0,
+      shortened: true,
+    }
+    expect(validateBoxScore(tooShort, { regulationLength: 3 }).ok).toBe(false)
+  })
+
   it('rejects negative inning runs', () => {
     const bad: BoxScoreInput = {
       ...VALID,

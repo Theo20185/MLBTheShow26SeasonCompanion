@@ -19,6 +19,7 @@ import { TEAM_BY_ID } from '../data/teamIdMap'
 import { BALLPARK_BY_ID } from '../data/ballparks'
 import { BoxScorePanel } from './BoxScorePanel'
 import { PostseasonGame } from './PostseasonGame'
+import { SimAheadModal } from './SimAheadModal'
 import {
   isUserStillAlive,
   startPostseason,
@@ -33,6 +34,7 @@ export function Game() {
   const [reportPanelOpen, setReportPanelOpen] = useState(false)
   const [boxScoreOpen, setBoxScoreOpen] = useState(false)
   const [simModalOpen, setSimModalOpen] = useState(false)
+  const [simAheadOpen, setSimAheadOpen] = useState(false)
 
   if (!season) {
     return (
@@ -102,6 +104,24 @@ export function Game() {
             </div>
           </nav>
           <PostseasonGame season={season} onSeasonUpdate={setSeason} />
+          <button
+            type="button"
+            onClick={() => setSimAheadOpen(true)}
+            className="mt-3 block w-full text-center text-xs text-slate-500 underline"
+          >
+            Sim ahead…
+          </button>
+          {simAheadOpen && (
+            <SimAheadModal
+              season={season}
+              onClose={() => setSimAheadOpen(false)}
+              onSimmed={(updated) => {
+                saveSeason(updated)
+                setSeason(updated)
+                setSimAheadOpen(false)
+              }}
+            />
+          )}
         </div>
       </main>
     )
@@ -280,6 +300,7 @@ export function Game() {
           ) : boxScoreOpen ? (
             <BoxScorePanel
               userIsHome={userIsHome}
+              regulationLength={season.defaultGameLength ?? 9}
               onCancel={() => setBoxScoreOpen(false)}
               onSubmit={handleBoxScoreSubmit}
             />
@@ -333,6 +354,14 @@ export function Game() {
             Sim this game
           </button>
 
+          <button
+            type="button"
+            onClick={() => setSimAheadOpen(true)}
+            className="mt-1 block w-full text-center text-xs text-slate-500 underline"
+          >
+            Sim ahead…
+          </button>
+
           {season.lastSnapshot && (
             <button
               type="button"
@@ -372,6 +401,18 @@ export function Game() {
               </div>
             </div>
           </div>
+        )}
+
+        {simAheadOpen && (
+          <SimAheadModal
+            season={season}
+            onClose={() => setSimAheadOpen(false)}
+            onSimmed={(updated) => {
+              saveSeason(updated)
+              setSeason(updated)
+              setSimAheadOpen(false)
+            }}
+          />
         )}
       </div>
     </main>

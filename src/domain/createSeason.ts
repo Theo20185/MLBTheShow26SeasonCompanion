@@ -5,7 +5,7 @@ import { TEAM_MAP, TEAM_BY_ID } from '../data/teamIdMap'
 import { TEAM_BASE_OVRS } from '../data/bundledData'
 import { BALLPARK_BY_TEAM_ID } from '../data/ballparks'
 import { getTeamSchedule, getOpeningDay } from './scheduleLoader'
-import type { Season, TeamRecord, Game, UserSquad } from './types'
+import type { Season, TeamRecord, Game, UserSquad, GameLength } from './types'
 
 const ROSTER_SNAPSHOT_ID = '2026-launch'
 
@@ -15,6 +15,8 @@ export interface CreateSeasonOptions {
   userSquad?: UserSquad
   /** DD squad OVR override; written into ovrOverrides[userTeamId] if provided. */
   userSquadOvr?: number
+  /** Default regulation length for full-report box scores (3, 5, 7, 9). */
+  defaultGameLength?: GameLength
   /** Optional fixed RNG seed for deterministic test runs. */
   rngSeed?: number
   /** Optional fixed createdAt for deterministic test runs. */
@@ -77,6 +79,7 @@ export function createSeason(opts: CreateSeasonOptions): Season {
     year: 2026,
     userTeamId,
     userSquad: opts.userSquad,
+    defaultGameLength: opts.defaultGameLength,
     startDate: openingDay,
     currentDate: openingDay,
     status: 'regular',

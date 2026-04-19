@@ -79,11 +79,22 @@ export interface UserSquad {
   abbrev: string
 }
 
+/**
+ * Default regulation length for games the user plays. The Show lets
+ * Vs. CPU games run as short as 3 innings; we let the user mirror that
+ * setting so the box-score validator doesn't flag short reports as
+ * incomplete. 9 is the MLB default.
+ */
+export type GameLength = 3 | 5 | 7 | 9
+export const ALLOWED_GAME_LENGTHS: GameLength[] = [3, 5, 7, 9]
+export const DEFAULT_GAME_LENGTH: GameLength = 9
+
 export interface Season {
   id: string
   year: number
   userTeamId: string         // the MLB team slot the user replaced (e.g., "NYY")
   userSquad?: UserSquad      // user's DD identity; missing on legacy saves (falls back to MLB team)
+  defaultGameLength?: GameLength // user's preferred game length for full-report validation (default 9)
   startDate: string          // opening day for the user team
   currentDate: string
   status: SeasonStatus

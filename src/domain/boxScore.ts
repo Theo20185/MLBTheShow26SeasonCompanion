@@ -1,4 +1,10 @@
 // Box-score validation + helpers (PLAN.md §6.4 full report).
+//
+// The Show lets Vs. CPU games run as short as 3 innings. Users can set
+// their preferred regulation length on the season; the validator
+// accepts that length without requiring the "shortened" flag. Reports
+// shorter than the season's regulation length still work but must be
+// marked shortened.
 
 export interface BoxScoreInput {
   inningsHome: number[]
@@ -15,17 +21,30 @@ export interface ValidationResult {
   error?: string
 }
 
-const STANDARD_INNINGS = 9
+export const MIN_INNINGS = 3
+const DEFAULT_REGULATION = 9
 
-export function validateBoxScore(input: BoxScoreInput): ValidationResult {
+export interface ValidateOptions {
+  /** Season-configured regulation length, e.g. 3, 5, 7, or 9 (default 9). */
+  regulationLength?: number
+}
+
+export function validateBoxScore(
+  input: BoxScoreInput,
+  opts: ValidateOptions = {}
+): ValidationResult {
+  const regulation = opts.regulationLength ?? DEFAULT_REGULATION
   if (input.inningsHome.length !== input.inningsAway.length) {
     return { ok: false, error: 'Both teams must have the same number of innings' }
   }
   const innings = input.inningsHome.length
-  if (innings < STANDARD_INNINGS && !input.shortened) {
+  if (innings < MIN_INNINGS) {
+    return { ok: false, error: `Need at least ${MIN_INNINGS} innings` }
+  }
+  if (innings < regulation && !input.shortened) {
     return {
       ok: false,
-      error: `Need ${STANDARD_INNINGS}+ innings unless game was shortened`,
+      error: `Need ${regulation}+ innings unless game was shortened`,
     }
   }
   if (input.inningsHome.some((r) => r < 0) || input.inningsAway.some((r) => r < 0)) {

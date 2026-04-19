@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import {
+  MIN_INNINGS,
   validateBoxScore,
   inferWinnerFromBoxScore,
   totalRuns,
@@ -10,14 +11,19 @@ interface Props {
   onSubmit: (didUserWin: boolean, homeScore: number, awayScore: number, detail: BoxScoreInput) => void
   onCancel: () => void
   userIsHome: boolean
+  /** Season-configured regulation length (3, 5, 7, or 9). */
+  regulationLength: number
 }
 
-const STANDARD_INNINGS = 9
-
-export function BoxScorePanel({ onSubmit, onCancel, userIsHome }: Props) {
-  const [innings, setInnings] = useState<number>(STANDARD_INNINGS)
-  const [home, setHome] = useState<number[]>(Array(STANDARD_INNINGS).fill(0))
-  const [away, setAway] = useState<number[]>(Array(STANDARD_INNINGS).fill(0))
+export function BoxScorePanel({
+  onSubmit,
+  onCancel,
+  userIsHome,
+  regulationLength,
+}: Props) {
+  const [innings, setInnings] = useState<number>(regulationLength)
+  const [home, setHome] = useState<number[]>(Array(regulationLength).fill(0))
+  const [away, setAway] = useState<number[]>(Array(regulationLength).fill(0))
   const [hitsHome, setHitsHome] = useState(0)
   const [hitsAway, setHitsAway] = useState(0)
   const [errorsHome, setErrorsHome] = useState(0)
@@ -26,7 +32,7 @@ export function BoxScorePanel({ onSubmit, onCancel, userIsHome }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   function setInningsCount(n: number) {
-    const clamped = Math.max(1, Math.min(15, n))
+    const clamped = Math.max(MIN_INNINGS, Math.min(15, n))
     setInnings(clamped)
     setHome((h) => resize(h, clamped))
     setAway((a) => resize(a, clamped))
@@ -50,7 +56,7 @@ export function BoxScorePanel({ onSubmit, onCancel, userIsHome }: Props) {
       errorsAway,
       shortened,
     }
-    const v = validateBoxScore(input)
+    const v = validateBoxScore(input, { regulationLength })
     if (!v.ok) {
       setError(v.error ?? 'Invalid box score')
       return

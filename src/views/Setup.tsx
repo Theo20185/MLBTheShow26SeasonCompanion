@@ -13,6 +13,7 @@ import {
 import { TEAM_BASE_OVRS } from '../data/bundledData'
 import { createSeason } from '../domain/createSeason'
 import { saveSeason } from '../domain/seasonStore'
+import { ALLOWED_GAME_LENGTHS, DEFAULT_GAME_LENGTH, type GameLength } from '../domain/types'
 
 const LEAGUES: LeagueId[] = ['AL', 'NL']
 const DIVISIONS: DivisionId[] = ['East', 'Central', 'West']
@@ -29,11 +30,12 @@ export function Setup() {
     <SquadSetup
       teamId={picked}
       onBack={() => setPicked(null)}
-      onStart={(name, abbrev, ovr) => {
+      onStart={(name, abbrev, ovr, gameLength) => {
         const season = createSeason({
           userTeamId: picked,
           userSquad: { name, abbrev },
           userSquadOvr: ovr,
+          defaultGameLength: gameLength,
         })
         saveSeason(season)
         navigate('/game')
@@ -96,7 +98,7 @@ function TeamPicker({ onPick }: { onPick: (teamId: string) => void }) {
 interface SquadSetupProps {
   teamId: string
   onBack: () => void
-  onStart: (name: string, abbrev: string, ovr: number) => void
+  onStart: (name: string, abbrev: string, ovr: number, gameLength: GameLength) => void
 }
 
 function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
@@ -106,6 +108,7 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
   const [name, setName] = useState(team.name)
   const [abbrev, setAbbrev] = useState(team.id)
   const [ovr, setOvr] = useState<number>(defaultOvr)
+  const [gameLength, setGameLength] = useState<GameLength>(DEFAULT_GAME_LENGTH)
   const [error, setError] = useState<string | null>(null)
 
   function handleSubmit() {
@@ -124,7 +127,7 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
       return
     }
     setError(null)
-    onStart(trimmedName, trimmedAbbrev, ovr)
+    onStart(trimmedName, trimmedAbbrev, ovr, gameLength)
   }
 
   return (
@@ -179,6 +182,32 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
                 MLB roster's base OVR for this team is {defaultOvr}.
               </span>
             </div>
+          </label>
+
+          <label className="block">
+            <span className="text-sm text-slate-300">Default game length (innings)</span>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {ALLOWED_GAME_LENGTHS.map((len) => (
+                <button
+                  key={len}
+                  type="button"
+                  onClick={() => setGameLength(len)}
+                  className={`min-w-[56px] rounded-lg border px-3 py-2 font-semibold transition ${
+                    gameLength === len
+                      ? 'border-emerald-500 bg-emerald-700 text-white'
+                      : 'border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600'
+                  }`}
+                  aria-label={`${len}-inning games`}
+                  aria-pressed={gameLength === len}
+                >
+                  {len}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              Match the inning count you'll use in MLB The Show's Vs. CPU
+              settings. You can change this later in Settings.
+            </p>
           </label>
 
           {error && (
