@@ -17,12 +17,15 @@ import {
 import { getDivisionRankForTeam } from '../domain/standings'
 import { TEAM_BY_ID } from '../data/teamIdMap'
 import { BALLPARK_BY_ID } from '../data/ballparks'
-import type { Season } from '../domain/types'
+import { BoxScorePanel } from './BoxScorePanel'
+import type { Season, BoxScore } from '../domain/types'
+import type { BoxScoreInput } from '../domain/boxScore'
 
 export function Game() {
   const initial = useMemo(() => loadActiveSeason(), [])
   const [season, setSeason] = useState<Season | null>(initial)
   const [reportPanelOpen, setReportPanelOpen] = useState(false)
+  const [boxScoreOpen, setBoxScoreOpen] = useState(false)
   const [simModalOpen, setSimModalOpen] = useState(false)
 
   if (!season) {
@@ -66,7 +69,40 @@ export function Game() {
     saveSeason(updated)
     setSeason(updated)
     setReportPanelOpen(false)
+    setBoxScoreOpen(false)
     setSimModalOpen(false)
+  }
+
+  function handleBoxScoreSubmit(
+    didUserWin: boolean,
+    homeScore: number,
+    awayScore: number,
+    detail: BoxScoreInput
+  ) {
+    const boxScore: BoxScore = {
+      inningsHome: detail.inningsHome.map((r) => ({ runs: r })),
+      inningsAway: detail.inningsAway.map((r) => ({ runs: r })),
+      hitsHome: detail.hitsHome,
+      hitsAway: detail.hitsAway,
+      errorsHome: detail.errorsHome,
+      errorsAway: detail.errorsAway,
+    }
+    const updated = reportUserGame(season!, {
+      gamePk: next!.gamePk,
+      didUserWin,
+      homeScore,
+      awayScore,
+    })
+    // Patch in box score detail.
+    const withDetail: Season = {
+      ...updated,
+      userGames: updated.userGames.map((g) =>
+        g.gamePk === next!.gamePk && g.result
+          ? { ...g, result: { ...g.result, quick: false, detail: boxScore } }
+          : g
+      ),
+    }
+    commit(withDetail)
   }
 
   function handleReport(didUserWin: boolean) {
@@ -114,6 +150,16 @@ export function Game() {
   return (
     <main className="min-h-svh bg-slate-900 px-4 py-4 text-slate-100">
       <div className="mx-auto max-w-md">
+        {/* Top nav drawer-equivalent links (PLAN.md §7.2) */}
+        <nav className="mb-3 flex items-center justify-between text-xs">
+          <Link to="/" className="text-slate-500 underline">Home</Link>
+          <div className="flex gap-3">
+            <Link to="/standings" className="text-slate-300 underline">Standings</Link>
+            <Link to="/schedule" className="text-slate-300 underline">Schedule</Link>
+            <Link to="/settings" className="text-slate-300 underline">Settings</Link>
+          </div>
+        </nav>
+
         {/* Progress chip */}
         <div
           data-testid="progress-chip"
@@ -153,7 +199,7 @@ export function Game() {
 
         {/* Primary action */}
         <div className="mt-6">
-          {!reportPanelOpen ? (
+          {!reportPanelOpen && !boxScoreOpen ? (
             <button
               type="button"
               onClick={() => setReportPanelOpen(true)}
@@ -161,10 +207,17 @@ export function Game() {
             >
               Report Result
             </button>
+          ) : boxScoreOpen ? (
+            <BoxScorePanel
+              userIsHome={userIsHome}
+              onCancel={() => setBoxScoreOpen(false)}
+              onSubmit={handleBoxScoreSubmit}
+            />
           ) : (
             <div className="space-y-3">
               <p className="text-center text-xs text-slate-400">
-                Tap W or L to commit. (Box-score entry coming in phase 8.)
+                Tap W or L to commit. Want to log innings, hits, errors? Open
+                the full box score.
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <button
@@ -184,8 +237,18 @@ export function Game() {
               </div>
               <button
                 type="button"
+                onClick={() => {
+                  setReportPanelOpen(false)
+                  setBoxScoreOpen(true)
+                }}
+                className="mt-1 block w-full text-center text-xs text-slate-300 underline"
+              >
+                Full box score →
+              </button>
+              <button
+                type="button"
                 onClick={() => setReportPanelOpen(false)}
-                className="mt-1 block w-full text-center text-xs text-slate-500 underline"
+                className="block w-full text-center text-xs text-slate-500 underline"
               >
                 Cancel
               </button>
