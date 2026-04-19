@@ -3,6 +3,7 @@
 
 import type { NormalizedGame } from '../data/scheduleNormalize'
 import type { LeagueId, DivisionId } from '../data/teamIdMap'
+import type { Bracket } from './bracket'
 
 export type SeasonStatus = 'setup' | 'regular' | 'postseason' | 'complete'
 
@@ -79,6 +80,9 @@ export interface Season {
   teamRecords: TeamRecord[]
   headToHead: HeadToHead
   lastSnapshot?: PreReportSnapshot
+  bracket?: Bracket          // populated when status >= 'postseason'
+  postseasonGames?: Game[]   // synthesized user-played postseason games
+  champion?: string          // teamId of WS winner; set when status === 'complete'
 }
 
 export interface SeasonIndexEntry {

@@ -18,6 +18,11 @@ import { getDivisionRankForTeam } from '../domain/standings'
 import { TEAM_BY_ID } from '../data/teamIdMap'
 import { BALLPARK_BY_ID } from '../data/ballparks'
 import { BoxScorePanel } from './BoxScorePanel'
+import { PostseasonGame } from './PostseasonGame'
+import {
+  isUserStillAlive,
+  startPostseason,
+} from '../domain/postseason'
 import type { Season, BoxScore } from '../domain/types'
 import type { BoxScoreInput } from '../domain/boxScore'
 
@@ -42,17 +47,75 @@ export function Game() {
     )
   }
 
-  const next = getNextUserGame(season)
-  if (!next) {
+  // Season-complete: champion screen.
+  if (season.status === 'complete') {
+    const champion = season.champion ? TEAM_BY_ID.get(season.champion) : null
+    const userWon = season.champion === season.userTeamId
     return (
       <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-slate-900 px-6 text-slate-100">
-        <p className="text-lg">Regular season complete.</p>
+        <p className="text-sm uppercase tracking-wider text-slate-400">Season complete</p>
+        <h1 className="text-center text-3xl font-semibold">
+          {userWon ? 'You won the World Series!' : `${champion?.city} ${champion?.name} win the World Series`}
+        </h1>
         <Link
           to="/bracket"
-          className="rounded-lg bg-emerald-600 px-6 py-3 text-lg font-semibold text-white"
+          className="rounded-lg bg-slate-700 px-6 py-3 font-semibold text-white"
         >
-          See the playoff bracket
+          View final bracket
         </Link>
+        <Link
+          to="/setup"
+          className="rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white"
+        >
+          Start a new season
+        </Link>
+      </main>
+    )
+  }
+
+  // Postseason mode.
+  if (season.status === 'postseason') {
+    if (!isUserStillAlive(season)) {
+      return (
+        <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-slate-900 px-6 text-slate-100">
+          <p className="text-sm uppercase tracking-wider text-slate-400">Eliminated</p>
+          <h1 className="text-center text-2xl font-semibold">Your season is over.</h1>
+          <Link
+            to="/bracket"
+            className="rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white"
+          >
+            See the bracket / sim to World Series
+          </Link>
+        </main>
+      )
+    }
+    return (
+      <main className="min-h-svh bg-slate-900 px-4 py-4 text-slate-100">
+        <div className="mx-auto max-w-md">
+          <nav className="mb-3 flex items-center justify-between text-xs">
+            <Link to="/" className="text-slate-500 underline">Home</Link>
+            <div className="flex gap-3">
+              <Link to="/bracket" className="text-amber-300 underline">Bracket</Link>
+              <Link to="/standings" className="text-slate-300 underline">Standings</Link>
+              <Link to="/settings" className="text-slate-300 underline">Settings</Link>
+            </div>
+          </nav>
+          <PostseasonGame season={season} onSeasonUpdate={setSeason} />
+        </div>
+      </main>
+    )
+  }
+
+  // Regular season.
+  const next = getNextUserGame(season)
+  if (!next) {
+    // Auto-build the bracket and flip status to postseason.
+    const updated = startPostseason(season)
+    saveSeason(updated)
+    setSeason(updated)
+    return (
+      <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-slate-900 px-6 text-slate-100">
+        <p className="text-lg">Regular season complete. Building the bracket...</p>
       </main>
     )
   }

@@ -39,8 +39,23 @@ export interface Series {
 export interface Bracket {
   alSeeds: string[]   // length 6, ranked 1..6
   nlSeeds: string[]
-  series: Series[]
+  series: Series[]    // grows as rounds are constructed (WCS → DS → LCS → WS)
+  currentRound: SeriesRound
   champion?: string
+}
+
+export const ROUND_ORDER: SeriesRound[] = ['WCS', 'DS', 'LCS', 'WS']
+
+export const ROUND_BEST_OF: Record<SeriesRound, 3 | 5 | 7> = {
+  WCS: 3,
+  DS: 5,
+  LCS: 7,
+  WS: 7,
+}
+
+export function nextRound(round: SeriesRound): SeriesRound | null {
+  const i = ROUND_ORDER.indexOf(round)
+  return i >= 0 && i < ROUND_ORDER.length - 1 ? ROUND_ORDER[i + 1] : null
 }
 
 export function seedLeague(season: Season, league: LeagueId): string[] {
@@ -89,7 +104,89 @@ export function buildBracket(season: Season): Bracket {
     alSeeds,
     nlSeeds,
     series: wcs,
+    currentRound: 'WCS',
   }
+}
+
+/**
+ * Builds the next round's series given a completed round. Pairings:
+ *   - DS: top-2 seeds (byes) face WCS winners. Higher seed faces lower
+ *     surviving seed.
+ *   - LCS: the two surviving teams in each league.
+ *   - WS: the two LCS winners.
+ * Returns the new Series[] to append to the bracket.
+ */
+export function buildNextRoundSeries(bracket: Bracket): Series[] {
+  const completed = bracket.series.filter((s) => s.round === bracket.currentRound)
+  if (completed.some((s) => !s.winnerId)) return []
+
+  const target = nextRound(bracket.currentRound)
+  if (!target) return []
+
+  if (target === 'DS') {
+    const out: Series[] = []
+    for (const [seeds, league] of [
+      [bracket.alSeeds, 'AL'],
+      [bracket.nlSeeds, 'NL'],
+    ] as const) {
+      const wcsThisLeague = completed.filter((s) => s.league === league)
+      const seed1 = seeds[0]
+      const seed2 = seeds[1]
+      // Seed 1 faces the lower-seeded WCS survivor; seed 2 faces the higher one.
+      const winners = wcsThisLeague
+        .map((s) => ({ teamId: s.winnerId!, rank: rankOf(seeds, s.winnerId!) }))
+        .sort((a, b) => a.rank - b.rank)
+      // Higher-seeded survivor (lower rank number) goes against seed 2,
+      // lower-seeded survivor goes against seed 1 (classic 1v6/2v3-style).
+      const higherSurvivor = winners[0]
+      const lowerSurvivor = winners[1]
+      out.push(makeSeries('DS', league, 5, seed1, lowerSurvivor.teamId, 1, lowerSurvivor.rank))
+      out.push(makeSeries('DS', league, 5, seed2, higherSurvivor.teamId, 2, higherSurvivor.rank))
+    }
+    return out
+  }
+
+  if (target === 'LCS') {
+    const out: Series[] = []
+    for (const league of ['AL', 'NL'] as const) {
+      const dsThisLeague = completed.filter((s) => s.league === league)
+      const seeds = league === 'AL' ? bracket.alSeeds : bracket.nlSeeds
+      const survivors = dsThisLeague
+        .map((s) => ({ teamId: s.winnerId!, rank: rankOf(seeds, s.winnerId!) }))
+        .sort((a, b) => a.rank - b.rank)
+      const high = survivors[0]
+      const low = survivors[1]
+      out.push(makeSeries('LCS', league, 7, high.teamId, low.teamId, high.rank, low.rank))
+    }
+    return out
+  }
+
+  if (target === 'WS') {
+    const al = completed.find((s) => s.league === 'AL')!
+    const nl = completed.find((s) => s.league === 'NL')!
+    // Higher seed (lower rank number across leagues) hosts. Tie → AL hosts.
+    const alRank = rankOf(bracket.alSeeds, al.winnerId!)
+    const nlRank = rankOf(bracket.nlSeeds, nl.winnerId!)
+    const alIsHigher = alRank <= nlRank
+    return [
+      makeSeries(
+        'WS',
+        'inter',
+        7,
+        alIsHigher ? al.winnerId! : nl.winnerId!,
+        alIsHigher ? nl.winnerId! : al.winnerId!,
+        alIsHigher ? alRank : nlRank,
+        alIsHigher ? nlRank : alRank
+      ),
+    ]
+  }
+
+  return []
+}
+
+function rankOf(seeds: string[], teamId: string): number {
+  const i = seeds.indexOf(teamId)
+  return i >= 0 ? i + 1 : seeds.length + 1
 }
 
 function makeSeries(
@@ -130,7 +227,7 @@ export function recordSeriesGame(s: Series, result: SeriesGameResult): Series {
   return updated
 }
 
-function countWinsBy(s: Series): { high: number; low: number } {
+export function countWinsBy(s: Series): { high: number; low: number } {
   // Higher seed hosts games 1, 2 (and 6, 7 in best-of-7); lower seed hosts
   // 3, 4 (5). For W/L counting, we just need who won each game — homeWon
   // tells us, but we have to know who was home in that game.
@@ -148,15 +245,19 @@ function countWinsBy(s: Series): { high: number; low: number } {
 }
 
 function highSeedHostedGame(s: Series, gameIndex: number): boolean {
+  return highSeedHostsGame(s, gameIndex)
+}
+
+export function teamCityName(teamId: string): string {
+  const t = TEAM_BY_ID.get(teamId)
+  return t ? `${t.city} ${t.name}` : teamId
+}
+
+export function highSeedHostsGame(s: Series, gameIndex: number): boolean {
   // Best-of-3: 1, 2 at high; 3 at low.
   if (s.bestOf === 3) return gameIndex < 2
   // Best-of-5: 1, 2 at high; 3, 4 at low; 5 at high.
   if (s.bestOf === 5) return gameIndex !== 2 && gameIndex !== 3
   // Best-of-7: 1, 2, 6, 7 at high; 3, 4, 5 at low.
   return gameIndex < 2 || gameIndex >= 5
-}
-
-export function teamCityName(teamId: string): string {
-  const t = TEAM_BY_ID.get(teamId)
-  return t ? `${t.city} ${t.name}` : teamId
 }
