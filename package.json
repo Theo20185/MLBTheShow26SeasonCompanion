@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install --with-deps chromium",
+    "test:playthrough": "tsx scripts/playthrough.ts",
     "fetch:roster": "tsx scripts/fetchRosterData.ts",
     "fetch:schedule": "tsx scripts/fetchSchedule.ts"
   },

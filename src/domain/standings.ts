@@ -7,6 +7,7 @@
 
 import type { LeagueId, DivisionId } from '../data/teamIdMap'
 import { TEAM_BY_ID, TEAM_MAP } from '../data/teamIdMap'
+import { compareTeamsForSeeding } from './tiebreakers'
 import type { Season, TeamRecord } from './types'
 
 export interface StandingsEntry {
@@ -46,13 +47,12 @@ export function getStandingsForDivision(
 ): StandingsEntry[] {
   const all = computeStandings(season)
   const inDiv = all.filter((e) => e.league === league && e.division === division)
-  inDiv.sort((a, b) => {
-    if (a.winPct !== b.winPct) return b.winPct - a.winPct
-    // Equal pct: fewer losses (so a 0-0 team beats a 0-5 team) → more wins → name.
-    if (a.losses !== b.losses) return a.losses - b.losses
-    if (a.wins !== b.wins) return b.wins - a.wins
-    return a.teamId.localeCompare(b.teamId)
-  })
+  // Use the full MLB tiebreaker stack so "who's atop the division?" matches
+  // what the bracket shows. Without this, two tied teams could appear at
+  // the top of the standings while the OTHER one is the bracket's
+  // division winner — confusing the user (and flagged by the playthrough
+  // harness's divisionWinnersAreDivisionWinners invariant).
+  inDiv.sort((a, b) => compareTeamsForSeeding(season, a.teamId, b.teamId))
   if (inDiv.length === 0) return []
   const leader = inDiv[0]
   return inDiv.map((e, i) => ({

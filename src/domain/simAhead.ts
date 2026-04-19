@@ -87,7 +87,10 @@ export function simToAllStarBreak(season: Season): Season {
 }
 
 export function simToPostseason(season: Season): Season {
-  // 1. Sim every remaining regular-season user game.
+  // 1. Sim every remaining regular-season user game. Note: reportUserGame
+  //    auto-flips status → postseason when the last user game is reported
+  //    (the engine owns that transition). So `working` may already have a
+  //    bracket by the end of this loop.
   let working = season
   let safety = 0
   while (working.status === 'regular' && safety++ < 200) {
@@ -106,10 +109,16 @@ export function simToPostseason(season: Season): Season {
   //    playoff team in the user's league if user fell short.
   working = ensureUserMakesPlayoffs(working)
 
-  // 3. Build the bracket and flip status to postseason.
-  if (working.status === 'regular') {
-    working = startPostseason(working)
+  // 3. (Re)build the bracket so it reflects the post-swap records. If a
+  //    bracket was auto-built during step 1, discard it first — its
+  //    seeding may not include the user team after the swap.
+  working = {
+    ...working,
+    status: 'regular',
+    bracket: undefined,
+    postseasonGames: undefined,
   }
+  working = startPostseason(working)
 
   return clearSnapshot(working)
 }
@@ -151,12 +160,26 @@ export function simToWorldSeries(season: Season): Season {
 function ensureUserMakesPlayoffs(season: Season): Season {
   const userTeam = TEAM_BY_ID.get(season.userTeamId)
   if (!userTeam) return season
-  const seeds = computeLeagueSeeds(season, userTeam.league)
-  if (seeds.includes(season.userTeamId)) return season
 
-  // Find the lowest-seeded playoff team to swap with.
-  const replaceTeamId = seeds[seeds.length - 1]
-  return swapTeamRecords(season, season.userTeamId, replaceTeamId)
+  // Try swapping with the lowest playoff team first. If tiebreakers
+  // leave the user JUST outside the rebuilt seeds, escalate up the
+  // seed list (5th → 4th → ... → 1st) until the user is unambiguously
+  // in. Worst case after 6 iterations the user has the top seed's
+  // record, which is guaranteed playoff-qualifying.
+  let working = season
+  let swapped = false
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const seeds = computeLeagueSeeds(working, userTeam.league)
+    if (seeds.includes(season.userTeamId)) {
+      return swapped ? { ...working, recordSwapApplied: true } : working
+    }
+    const targetIndex = Math.max(0, seeds.length - 1 - attempt)
+    const replaceTeamId = seeds[targetIndex]
+    working = swapTeamRecords(working, season.userTeamId, replaceTeamId)
+    swapped = true
+  }
+  // Defensive fallback (shouldn't reach here in practice).
+  return { ...working, recordSwapApplied: true }
 }
 
 function computeLeagueSeeds(season: Season, league: LeagueId): string[] {

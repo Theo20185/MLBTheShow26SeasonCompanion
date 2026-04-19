@@ -109,6 +109,7 @@ export interface Season {
   bracket?: Bracket          // populated when status >= 'postseason'
   postseasonGames?: Game[]   // synthesized user-played postseason games
   champion?: string          // teamId of WS winner; set when status === 'complete'
+  recordSwapApplied?: boolean // true if simToPostseason record-swapped to guarantee playoffs
 }
 
 export interface SeasonIndexEntry {
