@@ -87,6 +87,76 @@ describe('generatePostseasonGameForSeries', () => {
     expect(game.gamePk).toBeGreaterThan(900_000_000)
   })
 
+  it('schedules WCS games on consecutive days (no travel days)', () => {
+    const season = seedSeasonWithRealisticRecords()
+    const ps = startPostseason(season)
+    const wcsSeries = ps.bracket!.series.find((s) => s.round === 'WCS')!
+    const dates = [0, 1, 2].map((i) =>
+      generatePostseasonGameForSeries(wcsSeries, i).date
+    )
+    const day0 = new Date(dates[0] + 'T00:00:00Z').getTime()
+    const day1 = new Date(dates[1] + 'T00:00:00Z').getTime()
+    const day2 = new Date(dates[2] + 'T00:00:00Z').getTime()
+    const oneDayMs = 24 * 60 * 60 * 1000
+    expect(day1 - day0).toBe(oneDayMs)
+    expect(day2 - day1).toBe(oneDayMs)
+  })
+
+  it('inserts a travel day between games 2 and 3 of a Division Series (2-2-1)', () => {
+    const season = seedSeasonWithRealisticRecords()
+    const ps = startPostseason(season)
+    // Synthesize a fake DS series for the date check (we don't need real teams).
+    const fakeDS = {
+      id: 'DS-test',
+      round: 'DS' as const,
+      league: 'AL' as const,
+      bestOf: 5 as const,
+      highSeedTeamId: 'NYY',
+      lowSeedTeamId: 'BAL',
+      highSeedRank: 1,
+      lowSeedRank: 5,
+      results: [],
+    }
+    void ps
+    const dates = [0, 1, 2, 3, 4].map((i) =>
+      generatePostseasonGameForSeries(fakeDS, i).date
+    )
+    // Game 2 → Game 3 should be 2 days apart (travel day in between).
+    const day1 = new Date(dates[1] + 'T00:00:00Z').getTime()
+    const day2 = new Date(dates[2] + 'T00:00:00Z').getTime()
+    expect((day2 - day1) / (24 * 60 * 60 * 1000)).toBe(2)
+    // Game 4 → Game 5 should also be 2 days apart.
+    const day3 = new Date(dates[3] + 'T00:00:00Z').getTime()
+    const day4 = new Date(dates[4] + 'T00:00:00Z').getTime()
+    expect((day4 - day3) / (24 * 60 * 60 * 1000)).toBe(2)
+  })
+
+  it('LCS games 1,2 + 6,7 hosted by high seed; 3,4,5 by low seed (2-3-2)', () => {
+    const fakeLCS = {
+      id: 'LCS-test',
+      round: 'LCS' as const,
+      league: 'AL' as const,
+      bestOf: 7 as const,
+      highSeedTeamId: 'NYY',
+      lowSeedTeamId: 'BAL',
+      highSeedRank: 1,
+      lowSeedRank: 4,
+      results: [],
+    }
+    const homes = [0, 1, 2, 3, 4, 5, 6].map(
+      (i) => generatePostseasonGameForSeries(fakeLCS, i).homeTeamId
+    )
+    expect(homes).toEqual(['NYY', 'NYY', 'BAL', 'BAL', 'BAL', 'NYY', 'NYY'])
+  })
+
+  it('gives every game a UTC time (not midnight)', () => {
+    const season = seedSeasonWithRealisticRecords()
+    const ps = startPostseason(season)
+    const series = ps.bracket!.series[0]
+    const game = generatePostseasonGameForSeries(series, 0)
+    expect(game.gameDate).toMatch(/T(19|23):08:00Z$/) // afternoon or evening UTC slot
+  })
+
   it('low seed hosts game 3 in best-of-3', () => {
     const season = seedSeasonWithRealisticRecords()
     const ps = startPostseason(season)

@@ -41,14 +41,27 @@ const ROUND_OFFSETS: Record<SeriesRound, number> = {
   WS: 300_000,
 }
 
-// Approximate calendar dates for each round. Real MLB postseason runs
-// from late September through early November; we use representative
-// dates so the Game card reads sensibly.
+// Round start dates. Each round leaves at least one rest day after the
+// maximum possible end date of the previous round. WCS max ends Day 0+2,
+// DS max ends Day 0+6, LCS / WS max end Day 0+8 (see GAME_DAY_OFFSETS).
 const ROUND_START_DATES: Record<SeriesRound, string> = {
   WCS: '2026-10-01',
   DS: '2026-10-05',
-  LCS: '2026-10-12',
-  WS: '2026-10-23',
+  LCS: '2026-10-13',
+  WS: '2026-10-24',
+}
+
+// Day offsets per game index, mirroring real MLB postseason formats:
+//   WCS  (best-of-3, 1-1-1): consecutive days, no travel.
+//   DS   (best-of-5, 2-2-1): games at high seed, travel, games at low
+//                            seed, travel, deciding game at high seed.
+//   LCS  (best-of-7, 2-3-2): games 1-2 high, travel, 3-4-5 low, travel, 6-7 high.
+//   WS   (best-of-7, 2-3-2): same as LCS.
+const GAME_DAY_OFFSETS: Record<SeriesRound, readonly number[]> = {
+  WCS: [0, 1, 2],
+  DS:  [0, 1, 3, 4, 6],
+  LCS: [0, 1, 3, 4, 5, 7, 8],
+  WS:  [0, 1, 3, 4, 5, 7, 8],
 }
 
 export function startPostseason(season: Season): Season {
@@ -147,6 +160,7 @@ export function generatePostseasonGameForSeries(
   const awayTeamId = highHosts ? series.lowSeedTeamId : series.highSeedTeamId
   const park = BALLPARK_BY_TEAM_ID.get(homeTeamId)!
   const date = postseasonDateFor(series.round, gameIndex)
+  const gameDate = postseasonGameDateTime(date)
 
   return {
     gamePk:
@@ -155,7 +169,7 @@ export function generatePostseasonGameForSeries(
       seriesIndexHash(series) * 10 +
       gameIndex,
     date,
-    gameDate: `${date}T20:00:00Z`,
+    gameDate,
     homeTeamId,
     awayTeamId,
     parkId: park.id,
@@ -165,9 +179,28 @@ export function generatePostseasonGameForSeries(
 }
 
 function postseasonDateFor(round: SeriesRound, gameIndex: number): string {
+  const offsets = GAME_DAY_OFFSETS[round]
+  // Defensive: clamp to the last offset if a caller asks for a beyond-
+  // bestOf game index (shouldn't happen, but keeps things safe).
+  const offset = offsets[Math.min(gameIndex, offsets.length - 1)]
   const start = new Date(ROUND_START_DATES[round] + 'T00:00:00Z')
-  start.setUTCDate(start.getUTCDate() + gameIndex)
+  start.setUTCDate(start.getUTCDate() + offset)
   return start.toISOString().slice(0, 10)
+}
+
+/**
+ * Picks a realistic game start time for a postseason date. Weekday
+ * games get prime-time evening (≈8 PM ET); weekend games get afternoon
+ * (≈3 PM ET) to mirror MLB's broadcast windows. All times stored as
+ * UTC; the UI's toLocaleTimeString renders them in the user's local TZ.
+ */
+function postseasonGameDateTime(date: string): string {
+  // 23:08 UTC ≈ 7:08 PM EDT / 4:08 PM PDT (evening across all US TZs).
+  // 19:08 UTC ≈ 3:08 PM EDT / 12:08 PM PDT (afternoon weekend slot).
+  const dayOfWeek = new Date(date + 'T12:00:00Z').getUTCDay() // 0=Sun, 6=Sat
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+  const utcHour = isWeekend ? '19' : '23'
+  return `${date}T${utcHour}:08:00Z`
 }
 
 function seriesIndexHash(s: Series): number {

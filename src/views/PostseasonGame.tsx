@@ -97,7 +97,7 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
           <span data-testid="venue-name">{park?.name ?? game.homeTeamId}</span>
         </div>
         <div className="text-center text-sm text-slate-400">
-          {formatDate(game.date)} · Postseason
+          {formatDate(game.date)} · {formatTime(game.gameDate)}
         </div>
       </section>
 
@@ -189,5 +189,14 @@ function formatDate(iso: string): string {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+  })
+}
+
+function formatTime(iso: string): string {
+  const d = new Date(iso)
+  return d.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
   })
 }
