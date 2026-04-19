@@ -64,18 +64,50 @@ export function startPostseason(season: Season): Season {
 export function isUserStillAlive(season: Season): boolean {
   if (!season.bracket) return false
   const userTeamId = season.userTeamId
-  // User is alive if any active or future series could include them.
-  // For current/upcoming round: any series that contains user team
-  // and is not already lost.
+
+  // Did the user qualify for the postseason? Any seed in either league
+  // counts — including a top-2 bye, where the user isn't yet listed in
+  // any constructed series.
+  const inPlayoffs =
+    season.bracket.alSeeds.includes(userTeamId) ||
+    season.bracket.nlSeeds.includes(userTeamId)
+  if (!inPlayoffs) return false
+
+  // Have they lost a series? If any series the user appeared in has a
+  // winner that isn't them, they're eliminated.
   for (const s of season.bracket.series) {
     if (
       (s.highSeedTeamId === userTeamId || s.lowSeedTeamId === userTeamId) &&
-      (!s.winnerId || s.winnerId === userTeamId)
+      s.winnerId &&
+      s.winnerId !== userTeamId
     ) {
-      return true
+      return false
     }
   }
-  return false
+  return true
+}
+
+/**
+ * Sims the current round and advances the bracket while the user is in
+ * the postseason but has no game to play (most commonly: a top-2 seed
+ * with a Wild Card bye, or the gap between completing a series and the
+ * next round being constructed). Stops as soon as the user has an
+ * active game OR the postseason ends.
+ */
+export function advancePastByes(season: Season): Season {
+  let working = season
+  let safety = 0
+  while (
+    working.bracket &&
+    working.status === 'postseason' &&
+    isUserStillAlive(working) &&
+    !getNextUserPostseasonGame(working) &&
+    safety++ < 10
+  ) {
+    working = simOutCurrentRound(working)
+    working = maybeAdvanceRound(working)
+  }
+  return working
 }
 
 /**

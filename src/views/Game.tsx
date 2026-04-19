@@ -21,6 +21,8 @@ import { BoxScorePanel } from './BoxScorePanel'
 import { PostseasonGame } from './PostseasonGame'
 import { SimAheadModal } from './SimAheadModal'
 import {
+  advancePastByes,
+  getNextUserPostseasonGame,
   isUserStillAlive,
   startPostseason,
 } from '../domain/postseason'
@@ -88,6 +90,44 @@ export function Game() {
             className="rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white"
           >
             See the bracket / sim to World Series
+          </Link>
+        </main>
+      )
+    }
+    // User is alive but has nothing to play right now — most commonly a
+    // top-2 seed with a Wild Card bye, or the gap between completing a
+    // series and the next round being constructed. Offer to fast-forward.
+    if (!getNextUserPostseasonGame(season)) {
+      const round = season.bracket?.currentRound
+      const roundLabel = round === 'WCS' ? 'Wild Card Series' :
+        round === 'DS' ? 'Division Series' :
+        round === 'LCS' ? 'Championship Series' : 'current round'
+      return (
+        <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-slate-900 px-6 text-slate-100">
+          <p className="text-sm uppercase tracking-wider text-amber-300">Bye round</p>
+          <h1 className="text-center text-2xl font-semibold">
+            You have a bye through the {roundLabel}.
+          </h1>
+          <p className="max-w-sm text-center text-sm text-slate-400">
+            Sim out the {roundLabel} to find out your next opponent and start
+            playing.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              const advanced = advancePastByes(season)
+              saveSeason(advanced)
+              setSeason(advanced)
+            }}
+            className="rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white"
+          >
+            Sim the {roundLabel}
+          </button>
+          <Link
+            to="/bracket"
+            className="text-sm text-slate-400 underline"
+          >
+            See the bracket
           </Link>
         </main>
       )

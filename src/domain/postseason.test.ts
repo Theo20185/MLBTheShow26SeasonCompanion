@@ -7,6 +7,7 @@ import {
   isUserStillAlive,
   simRemainingPostseason,
   generatePostseasonGameForSeries,
+  advancePastByes,
 } from './postseason'
 import type { Season } from './types'
 
@@ -35,6 +36,29 @@ function seedSeasonWithRealisticRecords(userTeamId = 'NYY', rngSeed = 1): Season
   // Make sure the user's team is one of the top seeds in their division
   // so they make the playoffs.
   s = withRecord(s, userTeamId, 95, 36)
+  return s
+}
+
+/** Builds a season where the user team has the BEST record in their league
+ *  — guarantees them seed 1 and a Wild Card Series bye. Uses believable
+ *  162-game records so winPct comparisons resolve correctly. */
+function seedSeasonWithUserAsTopSeed(userTeamId = 'TOR', rngSeed = 1): Season {
+  let s = createSeason({ userTeamId, rngSeed })
+  s = {
+    ...s,
+    teamRecords: s.teamRecords.map((r, i) => {
+      const wins = 65 + ((i * 7) % 25)  // 65-89 wins out of 162
+      return {
+        ...r,
+        firstHalfWins: wins,
+        firstHalfLosses: 162 - wins,
+        secondHalfWins: 0,
+        secondHalfLosses: 0,
+      }
+    }),
+  }
+  // 108-54 (.667) clearly beats the 89-73 max (.549) of every other team.
+  s = withRecord(s, userTeamId, 108, 54)
   return s
 }
 
@@ -148,6 +172,60 @@ describe('reportUserPostseasonGame', () => {
     if (isUserStillAlive(season)) {
       expect(season.bracket!.currentRound).toBe('WS')
     }
+  })
+})
+
+describe('Wild Card bye handling (regression: top-2 seeds were marked eliminated)', () => {
+  it('isUserStillAlive returns true when the user has a WCS bye', () => {
+    const season = startPostseason(seedSeasonWithUserAsTopSeed('TOR'))
+    // Confirm we actually got the bye scenario.
+    const userIsTopSeed =
+      season.bracket!.alSeeds[0] === 'TOR' || season.bracket!.alSeeds[1] === 'TOR' ||
+      season.bracket!.nlSeeds[0] === 'TOR' || season.bracket!.nlSeeds[1] === 'TOR'
+    expect(userIsTopSeed).toBe(true)
+    const userInWCS = season.bracket!.series.some(
+      (s) => s.round === 'WCS' && (s.highSeedTeamId === 'TOR' || s.lowSeedTeamId === 'TOR')
+    )
+    expect(userInWCS, 'top-2 seed should NOT be in any WCS series').toBe(false)
+
+    expect(isUserStillAlive(season)).toBe(true)
+  })
+
+  it('getNextUserPostseasonGame is null during a bye round (nothing to play yet)', () => {
+    const season = startPostseason(seedSeasonWithUserAsTopSeed('TOR'))
+    expect(getNextUserPostseasonGame(season)).toBeNull()
+  })
+
+  it('advancePastByes simulates the WCS round and lands the bye team in the DS', () => {
+    let season = startPostseason(seedSeasonWithUserAsTopSeed('TOR'))
+    expect(season.bracket!.currentRound).toBe('WCS')
+
+    season = advancePastByes(season)
+    expect(season.bracket!.currentRound).toBe('DS')
+    // User now has an actual DS game to play.
+    const game = getNextUserPostseasonGame(season)
+    expect(game).not.toBeNull()
+    expect(game!.homeTeamId === 'TOR' || game!.awayTeamId === 'TOR').toBe(true)
+  })
+
+  it('advancePastByes is a no-op when the user already has an active game', () => {
+    let season = startPostseason(seedSeasonWithRealisticRecords('NYY'))
+    if (!isUserStillAlive(season)) return
+    if (!getNextUserPostseasonGame(season)) return // user got a bye in this seed; skip
+    const before = season.bracket!.currentRound
+    season = advancePastByes(season)
+    expect(season.bracket!.currentRound).toBe(before)
+  })
+
+  it('isUserStillAlive returns false when the user lost their series', () => {
+    let season = startPostseason(seedSeasonWithRealisticRecords('NYY'))
+    if (!isUserStillAlive(season) || !getNextUserPostseasonGame(season)) return
+    // Force user to lose the series by reporting losses until they're out.
+    let safety = 0
+    while (isUserStillAlive(season) && getNextUserPostseasonGame(season) && safety++ < 7) {
+      season = reportUserPostseasonGame(season, false)
+    }
+    expect(isUserStillAlive(season)).toBe(false)
   })
 })
 
