@@ -16,6 +16,7 @@
 
 import { TEAM_BY_ID } from '../data/teamIdMap'
 import { BALLPARK_BY_TEAM_ID } from '../data/ballparks'
+import postseasonTimesData from '../data/postseasonTimes.json'
 import { mulberry32, nextSeed } from './rng'
 import { simulateGame, effectiveOvr } from './simulator'
 import {
@@ -160,7 +161,14 @@ export function generatePostseasonGameForSeries(
   const awayTeamId = highHosts ? series.lowSeedTeamId : series.highSeedTeamId
   const park = BALLPARK_BY_TEAM_ID.get(homeTeamId)!
   const date = postseasonDateFor(series.round, gameIndex)
-  const gameDate = postseasonGameDateTime(date)
+  const gameDate = postseasonGameDateTime(
+    date,
+    series.round,
+    homeTeamId,
+    park.timezone,
+    series.id,
+    gameIndex
+  )
 
   return {
     gamePk:
@@ -189,18 +197,92 @@ function postseasonDateFor(round: SeriesRound, gameIndex: number): string {
 }
 
 /**
- * Picks a realistic game start time for a postseason date. Weekday
- * games get prime-time evening (≈8 PM ET); weekend games get afternoon
- * (≈3 PM ET) to mirror MLB's broadcast windows. All times stored as
- * UTC; the UI's toLocaleTimeString renders them in the user's local TZ.
+ * Picks a realistic game start time, drawn from the past-5-years
+ * MLB postseason data bundled at build time. Looks up the venue-local
+ * hour:minute pool for (round, homeTeamId); falls back to the round-
+ * wide pool if a specific team has too few historical games to give a
+ * good sample. The chosen slot is then converted from venue-local to
+ * UTC so the Game card can render it in the park's TZ.
+ *
+ * The pick is deterministic on (date + seriesId + gameIndex) so the
+ * same season produces the same schedule across reloads / replays.
  */
-function postseasonGameDateTime(date: string): string {
-  // 23:08 UTC ≈ 7:08 PM EDT / 4:08 PM PDT (evening across all US TZs).
-  // 19:08 UTC ≈ 3:08 PM EDT / 12:08 PM PDT (afternoon weekend slot).
-  const dayOfWeek = new Date(date + 'T12:00:00Z').getUTCDay() // 0=Sun, 6=Sat
-  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-  const utcHour = isWeekend ? '19' : '23'
-  return `${date}T${utcHour}:08:00Z`
+const MIN_TEAM_SAMPLE = 3
+const POSTSEASON_TIMES = postseasonTimesData as PostseasonTimesBundle
+
+interface SlotPick { hour: number; minute: number }
+interface PostseasonTimesBundle {
+  fetchedAt: string
+  sourceYears: number[]
+  byRoundAndTeam: Record<string, Record<string, SlotPick[]>>
+  byRound: Record<string, SlotPick[]>
+}
+
+// October UTC offsets per IANA timezone. Postseason games (Sep 25 –
+// early Nov) all fall during DST for US East/Central/Mountain/Pacific;
+// Phoenix doesn't observe DST. WS games on/after the first Sunday of
+// November (DST end) would be 1 hour off — within ~1 game per 5 years
+// historically; an acceptable approximation for v1.
+const OCTOBER_UTC_OFFSET_HOURS: Record<string, number> = {
+  'America/New_York': -4,    // EDT
+  'America/Toronto': -4,     // EDT
+  'America/Detroit': -4,     // EDT
+  'America/Chicago': -5,     // CDT
+  'America/Denver': -6,      // MDT
+  'America/Phoenix': -7,     // MST (no DST)
+  'America/Los_Angeles': -7, // PDT
+}
+
+function postseasonGameDateTime(
+  date: string,
+  round: SeriesRound,
+  homeTeamId: string,
+  timezone: string,
+  seriesId: string,
+  gameIndex: number
+): string {
+  const slot = pickSlot(round, homeTeamId, seriesId, gameIndex)
+  return localTimeToUtcIso(date, slot.hour, slot.minute, timezone)
+}
+
+function pickSlot(
+  round: SeriesRound,
+  homeTeamId: string,
+  seriesId: string,
+  gameIndex: number
+): SlotPick {
+  const teamPool = POSTSEASON_TIMES.byRoundAndTeam[round]?.[homeTeamId]
+  const roundPool = POSTSEASON_TIMES.byRound[round]
+  const pool =
+    teamPool && teamPool.length >= MIN_TEAM_SAMPLE
+      ? teamPool
+      : roundPool && roundPool.length > 0
+        ? roundPool
+        : [{ hour: 20, minute: 8 }]  // last-resort fallback: 8 PM local
+  const idx = stableHash(`${seriesId}|${gameIndex}`) % pool.length
+  return pool[idx]
+}
+
+function stableHash(s: string): number {
+  let h = 0
+  for (let i = 0; i < s.length; i++) {
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0
+  }
+  return Math.abs(h)
+}
+
+function localTimeToUtcIso(
+  date: string,
+  localHour: number,
+  localMinute: number,
+  timezone: string
+): string {
+  const offset = OCTOBER_UTC_OFFSET_HOURS[timezone] ?? -5  // safe central-ish default
+  const [y, m, d] = date.split('-').map(Number)
+  // local = UTC + offset → UTC = local - offset.
+  // setUTCHours handles overflow into the next day automatically.
+  const utc = new Date(Date.UTC(y, m - 1, d, localHour - offset, localMinute, 0))
+  return utc.toISOString().replace(/\.\d{3}Z$/, 'Z')
 }
 
 function seriesIndexHash(s: Series): number {

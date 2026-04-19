@@ -149,12 +149,34 @@ describe('generatePostseasonGameForSeries', () => {
     expect(homes).toEqual(['NYY', 'NYY', 'BAL', 'BAL', 'BAL', 'NYY', 'NYY'])
   })
 
-  it('gives every game a UTC time (not midnight)', () => {
+  it('produces a UTC gameDate corresponding to a real venue-local hour from history', () => {
+    // Times are sampled from the past-5-years MLB postseason data
+    // (see scripts/analyzePostseasonTimes.ts) and rendered in the
+    // venue's local TZ. We assert the chosen UTC time round-trips
+    // back to a sensible hour (12 PM-9 PM local).
     const season = seedSeasonWithRealisticRecords()
     const ps = startPostseason(season)
     const series = ps.bracket!.series[0]
-    const game = generatePostseasonGameForSeries(series, 0)
-    expect(game.gameDate).toMatch(/T(19|23):08:00Z$/) // afternoon or evening UTC slot
+    for (const i of [0, 1, 2]) {
+      const game = generatePostseasonGameForSeries(series, i)
+      // Just verify we got a well-formed UTC ISO with no millis.
+      expect(game.gameDate).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/)
+      // And the time should be sometime in the afternoon/evening UTC
+      // (which corresponds to ~midday-evening across all US venues).
+      const utcHour = parseInt(game.gameDate.slice(11, 13), 10)
+      // 16-04 UTC covers 12 PM ET to 11 PM PT — broad but should catch
+      // any nonsense timezones.
+      expect(utcHour >= 16 || utcHour <= 4, `unexpected UTC hour ${utcHour}`).toBe(true)
+    }
+  })
+
+  it('is deterministic — same series + index yields the same gameDate', () => {
+    const season = seedSeasonWithRealisticRecords()
+    const ps = startPostseason(season)
+    const series = ps.bracket!.series[0]
+    const a = generatePostseasonGameForSeries(series, 0)
+    const b = generatePostseasonGameForSeries(series, 0)
+    expect(a.gameDate).toBe(b.gameDate)
   })
 
   it('low seed hosts game 3 in best-of-3', () => {

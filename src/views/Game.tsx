@@ -21,6 +21,7 @@ import { BoxScorePanel } from './BoxScorePanel'
 import { PostseasonGame } from './PostseasonGame'
 import { SimAheadModal } from './SimAheadModal'
 import { NavBar } from './NavBar'
+import { formatGameDate, formatGameTime } from './formatGameTime'
 import {
   advancePastByes,
   getNextUserPostseasonGame,
@@ -328,7 +329,7 @@ export function Game() {
             </span>
           </div>
           <div className="text-center text-sm text-slate-400">
-            {formatDate(next.date)} · {formatTime(next.gameDate)}
+            {formatGameDate(next.date, next.parkId)} · {formatGameTime(next.gameDate, next.parkId)}
           </div>
         </section>
 
@@ -482,20 +483,5 @@ function ordinal(n: number): string {
   return `${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]}`
 }
 
-function formatDate(iso: string): string {
-  const d = new Date(iso + 'T12:00:00Z')
-  return d.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
-
-function formatTime(iso: string): string {
-  const d = new Date(iso)
-  return d.toLocaleTimeString(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  })
-}
+// Date/time helpers moved to formatGameTime.ts so all views use the
+// venue's local timezone consistently.

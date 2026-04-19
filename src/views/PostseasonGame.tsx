@@ -17,6 +17,7 @@ import { undoLastReport } from '../domain/reportGame'
 import { saveSeason } from '../domain/seasonStore'
 import { countWinsBy } from '../domain/bracket'
 import { getUserDisplay, fullLabel } from '../domain/userDisplay'
+import { formatGameDate, formatGameTime } from './formatGameTime'
 import type { Season } from '../domain/types'
 
 const ROUND_NAMES: Record<string, string> = {
@@ -97,7 +98,7 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
           <span data-testid="venue-name">{park?.name ?? game.homeTeamId}</span>
         </div>
         <div className="text-center text-sm text-slate-400">
-          {formatDate(game.date)} · {formatTime(game.gameDate)}
+          {formatGameDate(game.date, game.parkId)} · {formatGameTime(game.gameDate, game.parkId)}
         </div>
       </section>
 
@@ -183,20 +184,4 @@ function seriesStateText(userWins: number, oppWins: number, opponentName: string
   return `Tied ${userWins}-${oppWins}`
 }
 
-function formatDate(iso: string): string {
-  const d = new Date(iso + 'T12:00:00Z')
-  return d.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
-
-function formatTime(iso: string): string {
-  const d = new Date(iso)
-  return d.toLocaleTimeString(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  })
-}
+// Date/time helpers moved to formatGameTime.ts.

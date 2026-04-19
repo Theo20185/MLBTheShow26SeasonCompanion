@@ -6,6 +6,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { loadSeason, listSeasons } from '../domain/seasonStore'
 import { getUserDisplay } from '../domain/userDisplay'
+import { formatGameDate } from './formatGameTime'
 
 export function Schedule() {
   const season = useMemo(() => {
@@ -64,7 +65,7 @@ export function Schedule() {
               >
                 <div>
                   <div className="text-xs text-slate-400">
-                    {formatDate(g.date)} · {userIsHome ? 'vs' : '@'} {opp.name}
+                    {formatGameDate(g.date, g.parkId)} · {userIsHome ? 'vs' : '@'} {opp.name}
                   </div>
                   <div className="text-sm">
                     {g.status === 'played' && g.result
@@ -88,10 +89,4 @@ export function Schedule() {
   )
 }
 
-function formatDate(iso: string): string {
-  const d = new Date(iso + 'T12:00:00Z')
-  return d.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-  })
-}
+// Date formatter moved to formatGameTime.ts.
