@@ -26,7 +26,12 @@ export function Settings() {
     return (
       <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-slate-900 px-6 text-slate-100">
         <p>No active season.</p>
-        <Link to="/" className="text-emerald-400 underline">Home</Link>
+        <Link
+          to="/"
+          className="inline-flex min-h-[48px] w-full max-w-xs items-center justify-center rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white active:scale-[0.98]"
+        >
+          Home
+        </Link>
       </main>
     )
   }
@@ -94,9 +99,12 @@ export function Settings() {
   return (
     <main className="min-h-svh bg-slate-900 px-4 py-4 text-slate-100">
       <div className="mx-auto max-w-2xl">
-        <header className="mb-4 flex items-center justify-between">
+        <header className="mb-4 flex items-center justify-between gap-3">
           <h1 className="text-xl font-semibold">Settings</h1>
-          <Link to="/game" className="text-sm text-emerald-400 underline">
+          <Link
+            to="/game"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-emerald-700 bg-emerald-900/40 px-3 text-sm font-semibold text-emerald-200 hover:bg-emerald-900/60 active:scale-[0.98]"
+          >
             Back to game
           </Link>
         </header>

@@ -135,7 +135,7 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
             <button
               type="button"
               onClick={() => setReportOpen(false)}
-              className="mt-1 block w-full text-center text-xs text-slate-500 underline"
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-4 text-sm font-semibold text-slate-300 hover:bg-slate-800 active:scale-[0.98]"
             >
               Cancel
             </button>
@@ -146,7 +146,7 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
           <button
             type="button"
             onClick={handleUndo}
-            className="mt-3 block w-full text-center text-sm text-amber-400 underline"
+            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-amber-700 bg-amber-900/30 px-4 text-sm font-semibold text-amber-200 hover:bg-amber-900/50 active:scale-[0.98]"
           >
             Undo last game
           </button>
@@ -154,7 +154,7 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
 
         <Link
           to="/bracket"
-          className="mt-3 block w-full text-center text-xs text-slate-400 underline"
+          className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 text-sm font-semibold text-slate-200 hover:bg-slate-700 active:scale-[0.98]"
         >
           See the bracket
         </Link>

@@ -20,6 +20,7 @@ import { BALLPARK_BY_ID } from '../data/ballparks'
 import { BoxScorePanel } from './BoxScorePanel'
 import { PostseasonGame } from './PostseasonGame'
 import { SimAheadModal } from './SimAheadModal'
+import { NavBar } from './NavBar'
 import {
   advancePastByes,
   getNextUserPostseasonGame,
@@ -62,18 +63,20 @@ export function Game() {
         <h1 className="text-center text-3xl font-semibold">
           {userWon ? 'You won the World Series!' : `${champion?.city} ${champion?.name} win the World Series`}
         </h1>
-        <Link
-          to="/bracket"
-          className="rounded-lg bg-slate-700 px-6 py-3 font-semibold text-white"
-        >
-          View final bracket
-        </Link>
-        <Link
-          to="/setup"
-          className="rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white"
-        >
-          Start a new season
-        </Link>
+        <div className="mt-2 flex w-full max-w-xs flex-col gap-3">
+          <Link
+            to="/bracket"
+            className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-slate-700 px-6 py-3 font-semibold text-white active:scale-[0.98]"
+          >
+            View final bracket
+          </Link>
+          <Link
+            to="/setup"
+            className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white active:scale-[0.98]"
+          >
+            Start a new season
+          </Link>
+        </div>
       </main>
     )
   }
@@ -87,7 +90,7 @@ export function Game() {
           <h1 className="text-center text-2xl font-semibold">Your season is over.</h1>
           <Link
             to="/bracket"
-            className="rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white"
+            className="inline-flex min-h-[48px] w-full max-w-xs items-center justify-center rounded-lg bg-emerald-600 px-6 py-3 text-center font-semibold text-white active:scale-[0.98]"
           >
             See the bracket / sim to World Series
           </Link>
@@ -112,42 +115,44 @@ export function Game() {
             Sim out the {roundLabel} to find out your next opponent and start
             playing.
           </p>
-          <button
-            type="button"
-            onClick={() => {
-              const advanced = advancePastByes(season)
-              saveSeason(advanced)
-              setSeason(advanced)
-            }}
-            className="rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white"
-          >
-            Sim the {roundLabel}
-          </button>
-          <Link
-            to="/bracket"
-            className="text-sm text-slate-400 underline"
-          >
-            See the bracket
-          </Link>
+          <div className="mt-2 flex w-full max-w-xs flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                const advanced = advancePastByes(season)
+                saveSeason(advanced)
+                setSeason(advanced)
+              }}
+              className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white active:scale-[0.98]"
+            >
+              Sim the {roundLabel}
+            </button>
+            <Link
+              to="/bracket"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 text-sm font-semibold text-slate-200 hover:bg-slate-700 active:scale-[0.98]"
+            >
+              See the bracket
+            </Link>
+          </div>
         </main>
       )
     }
     return (
       <main className="min-h-svh bg-slate-900 px-4 py-4 text-slate-100">
         <div className="mx-auto max-w-md">
-          <nav className="mb-3 flex items-center justify-between text-xs">
-            <Link to="/" className="text-slate-500 underline">Home</Link>
-            <div className="flex gap-3">
-              <Link to="/bracket" className="text-amber-300 underline">Bracket</Link>
-              <Link to="/standings" className="text-slate-300 underline">Standings</Link>
-              <Link to="/settings" className="text-slate-300 underline">Settings</Link>
-            </div>
-          </nav>
+          <NavBar
+            items={[
+              { to: '/', label: 'Home' },
+              { to: '/bracket', label: 'Bracket', accent: true },
+              { to: '/standings', label: 'Standings' },
+              { to: '/settings', label: 'Settings' },
+            ]}
+          />
           <PostseasonGame season={season} onSeasonUpdate={setSeason} />
           <button
             type="button"
             onClick={() => setSimAheadOpen(true)}
-            className="mt-3 block w-full text-center text-xs text-slate-500 underline"
+            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 text-sm font-semibold text-slate-200 hover:bg-slate-700 active:scale-[0.98]"
           >
             Sim ahead…
           </button>
@@ -280,15 +285,15 @@ export function Game() {
   return (
     <main className="min-h-svh bg-slate-900 px-4 py-4 text-slate-100">
       <div className="mx-auto max-w-md">
-        {/* Top nav drawer-equivalent links (PLAN.md §7.2) */}
-        <nav className="mb-3 flex items-center justify-between text-xs">
-          <Link to="/" className="text-slate-500 underline">Home</Link>
-          <div className="flex gap-3">
-            <Link to="/standings" className="text-slate-300 underline">Standings</Link>
-            <Link to="/schedule" className="text-slate-300 underline">Schedule</Link>
-            <Link to="/settings" className="text-slate-300 underline">Settings</Link>
-          </div>
-        </nav>
+        {/* Top nav drawer-equivalent buttons (PLAN.md §7.2) */}
+        <NavBar
+          items={[
+            { to: '/', label: 'Home' },
+            { to: '/standings', label: 'Standings' },
+            { to: '/schedule', label: 'Schedule' },
+            { to: '/settings', label: 'Settings' },
+          ]}
+        />
 
         {/* Progress chip */}
         <div
@@ -372,41 +377,42 @@ export function Game() {
                   setReportPanelOpen(false)
                   setBoxScoreOpen(true)
                 }}
-                className="mt-1 block w-full text-center text-xs text-slate-300 underline"
+                className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 text-sm font-semibold text-slate-200 hover:bg-slate-700 active:scale-[0.98]"
               >
                 Full box score →
               </button>
               <button
                 type="button"
                 onClick={() => setReportPanelOpen(false)}
-                className="block w-full text-center text-xs text-slate-500 underline"
+                className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-4 text-sm font-semibold text-slate-300 hover:bg-slate-800 active:scale-[0.98]"
               >
                 Cancel
               </button>
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={() => setSimModalOpen(true)}
-            className="mt-3 block w-full text-center text-xs text-slate-500 underline"
-          >
-            Sim this game
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSimAheadOpen(true)}
-            className="mt-1 block w-full text-center text-xs text-slate-500 underline"
-          >
-            Sim ahead…
-          </button>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setSimModalOpen(true)}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 text-sm font-semibold text-slate-200 hover:bg-slate-700 active:scale-[0.98]"
+            >
+              Sim this game
+            </button>
+            <button
+              type="button"
+              onClick={() => setSimAheadOpen(true)}
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 text-sm font-semibold text-slate-200 hover:bg-slate-700 active:scale-[0.98]"
+            >
+              Sim ahead…
+            </button>
+          </div>
 
           {season.lastSnapshot && (
             <button
               type="button"
               onClick={handleUndo}
-              className="mt-3 block w-full text-center text-sm text-amber-400 underline"
+              className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-amber-700 bg-amber-900/30 px-4 text-sm font-semibold text-amber-200 hover:bg-amber-900/50 active:scale-[0.98]"
             >
               Undo last game
             </button>
