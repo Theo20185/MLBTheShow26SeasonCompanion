@@ -4,7 +4,7 @@ A free, browser-based companion app for MLB The Show 26 that lets you run a cust
 
 > **Status: pre-alpha.** This README is the public user guide. It will fill in as features ship — see [`PLAN.md`](./PLAN.md) for the full design plan.
 
-> **Live app:** _coming soon — link will appear here once GitHub Pages deploy is live._
+> **Live app:** **https://theo20185.github.io/MLBTheShow26SeasonCompanion/** _(deployed automatically on push to main once the workflow is live; may show only the placeholder Home view in pre-alpha)_
 
 ---
 
