@@ -5,6 +5,7 @@ import { Game } from './views/Game'
 import { Schedule } from './views/Schedule'
 import { Standings } from './views/Standings'
 import { Settings } from './views/Settings'
+import { Bracket } from './views/Bracket'
 
 // Top-level router. We use HashRouter because the app is hosted on
 // GitHub Pages, which has no server-side rewrite for SPA deep links —
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/schedule" element={<Schedule />} />
         <Route path="/standings" element={<Standings />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/bracket" element={<Bracket />} />
       </Routes>
     </HashRouter>
   )

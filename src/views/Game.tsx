@@ -45,8 +45,14 @@ export function Game() {
   const next = getNextUserGame(season)
   if (!next) {
     return (
-      <main className="flex min-h-svh items-center justify-center bg-slate-900 px-6 text-slate-100">
-        <p>Season complete! (Postseason coming in phase 10.)</p>
+      <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-slate-900 px-6 text-slate-100">
+        <p className="text-lg">Regular season complete.</p>
+        <Link
+          to="/bracket"
+          className="rounded-lg bg-emerald-600 px-6 py-3 text-lg font-semibold text-white"
+        >
+          See the playoff bracket
+        </Link>
       </main>
     )
   }
