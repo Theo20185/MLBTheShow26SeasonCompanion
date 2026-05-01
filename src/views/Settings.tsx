@@ -16,9 +16,12 @@ import {
   DEFAULT_GAME_LENGTH,
   DEFAULT_SQUAD_PRIMARY,
   DEFAULT_SQUAD_SECONDARY,
+  DEFAULT_THEME_MODE,
   type Season,
   type GameLength,
+  type ThemeMode,
 } from '../domain/types'
+import { useThemeMode } from './squadTheme'
 
 export function Settings() {
   const navigate = useNavigate()
@@ -30,9 +33,11 @@ export function Settings() {
 
   const teams = useMemo(() => TEAM_MAP, [])
 
+  useThemeMode(season?.themeMode ?? DEFAULT_THEME_MODE)
+
   if (!season) {
     return (
-      <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-slate-900 px-6 text-slate-100">
+      <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-white px-6 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
         <p>No active season.</p>
         <Link
           to="/"
@@ -56,6 +61,12 @@ export function Settings() {
 
   function setGameLength(len: GameLength) {
     const updated: Season = { ...season!, defaultGameLength: len }
+    saveSeason(updated)
+    setSeason(updated)
+  }
+
+  function setThemeMode(mode: ThemeMode) {
+    const updated: Season = { ...season!, themeMode: mode }
     saveSeason(updated)
     setSeason(updated)
   }
@@ -128,40 +139,66 @@ export function Settings() {
     navigate('/')
   }
 
+  const currentMode = season.themeMode ?? DEFAULT_THEME_MODE
+  const primaryColor = season.userSquad?.primaryColor ?? DEFAULT_SQUAD_PRIMARY
+  const secondaryColor = season.userSquad?.secondaryColor ?? DEFAULT_SQUAD_SECONDARY
+
   return (
-    <main className="min-h-svh bg-slate-900 px-4 py-4 text-slate-100">
+    <main className="min-h-svh bg-white px-4 py-4 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <div className="mx-auto max-w-2xl">
         <header className="mb-4 flex items-center justify-between gap-3">
           <h1 className="text-xl font-semibold">Settings</h1>
           <Link
             to="/game"
-            className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-emerald-700 bg-emerald-900/40 px-3 text-sm font-semibold text-emerald-200 hover:bg-emerald-900/60 active:scale-[0.98]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-emerald-700 bg-emerald-100 px-3 text-sm font-semibold text-emerald-800 hover:bg-emerald-200 active:scale-[0.98] dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200 dark:hover:bg-emerald-900/60"
           >
             Back to game
           </Link>
         </header>
 
-        <section className="mb-6 rounded-xl border border-slate-700 bg-slate-800 p-4">
-          <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-400">
+        <section className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            Appearance
+          </h2>
+          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
+            Light or dark mode. Default is dark.
+          </p>
+          <div className="flex gap-2">
+            {(['dark', 'light'] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setThemeMode(mode)}
+                aria-pressed={currentMode === mode}
+                className={`min-w-[80px] rounded-lg border px-3 py-2 font-semibold capitalize transition ${
+                  currentMode === mode
+                    ? 'border-emerald-500 bg-emerald-600 text-white'
+                    : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'
+                }`}
+              >
+                {mode}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Squad colors
           </h2>
-          <p className="mb-3 text-xs text-slate-400">
-            Used for primary CTAs and the user-team highlight. Pick any
-            MLB team's palette as a preset, or fine-tune the swatches.
+          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
+            Primary tints action buttons (Report, Win, Sim). Secondary tints
+            navigation chips. Tap a swatch to pick any color, or pick an MLB
+            preset.
           </p>
           <label className="block">
-            <span className="text-xs text-slate-500">Team color preset</span>
+            <span className="text-xs text-slate-500 dark:text-slate-500">Team color preset</span>
             <select
-              value={
-                findTeamByColors(
-                  season.userSquad?.primaryColor ?? DEFAULT_SQUAD_PRIMARY,
-                  season.userSquad?.secondaryColor ?? DEFAULT_SQUAD_SECONDARY
-                )?.id ?? '__custom'
-              }
+              value={findTeamByColors(primaryColor, secondaryColor)?.id ?? '__custom'}
               onChange={(e) => {
                 if (e.target.value !== '__custom') applyTeamPreset(e.target.value)
               }}
-              className="mt-1 w-full rounded-lg bg-slate-700 px-3 py-2 text-base"
+              className="mt-1 w-full rounded-lg bg-white px-3 py-2 text-base text-slate-900 dark:bg-slate-700 dark:text-slate-100"
             >
               <option value="__custom">Custom colors</option>
               {[...TEAM_MAP].sort((a, b) => a.name.localeCompare(b.name)).map((t) => (
@@ -171,53 +208,32 @@ export function Settings() {
               ))}
             </select>
           </label>
-          <div className="mt-3 grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className="text-xs text-slate-500">Primary</span>
-              <div className="mt-1 flex items-center gap-2">
-                <input
-                  type="color"
-                  value={season.userSquad?.primaryColor ?? DEFAULT_SQUAD_PRIMARY}
-                  onChange={(e) => setSquadColors(e.target.value, undefined)}
-                  className="h-10 w-12 cursor-pointer rounded border border-slate-600 bg-transparent"
-                  aria-label="Primary squad color"
-                />
-                <input
-                  type="text"
-                  value={season.userSquad?.primaryColor ?? DEFAULT_SQUAD_PRIMARY}
-                  onChange={(e) => setSquadColors(e.target.value, undefined)}
-                  maxLength={7}
-                  className="flex-1 rounded-lg bg-slate-700 px-3 py-2 font-mono text-sm uppercase"
-                />
-              </div>
-            </label>
-            <label className="block">
-              <span className="text-xs text-slate-500">Secondary</span>
-              <div className="mt-1 flex items-center gap-2">
-                <input
-                  type="color"
-                  value={season.userSquad?.secondaryColor ?? DEFAULT_SQUAD_SECONDARY}
-                  onChange={(e) => setSquadColors(undefined, e.target.value)}
-                  className="h-10 w-12 cursor-pointer rounded border border-slate-600 bg-transparent"
-                  aria-label="Secondary squad color"
-                />
-                <input
-                  type="text"
-                  value={season.userSquad?.secondaryColor ?? DEFAULT_SQUAD_SECONDARY}
-                  onChange={(e) => setSquadColors(undefined, e.target.value)}
-                  maxLength={7}
-                  className="flex-1 rounded-lg bg-slate-700 px-3 py-2 font-mono text-sm uppercase"
-                />
-              </div>
-            </label>
+          <p className="mt-4 text-xs italic text-slate-500 dark:text-slate-400">
+            Tap a swatch below to pick a color.
+          </p>
+          <div className="mt-2 grid grid-cols-2 gap-4">
+            <SwatchField
+              label="Primary"
+              hint="Action buttons"
+              ariaLabel="Primary squad color"
+              value={primaryColor}
+              onChange={(v) => setSquadColors(v, undefined)}
+            />
+            <SwatchField
+              label="Secondary"
+              hint="Nav chips"
+              ariaLabel="Secondary squad color"
+              value={secondaryColor}
+              onChange={(v) => setSquadColors(undefined, v)}
+            />
           </div>
         </section>
 
-        <section className="mb-6 rounded-xl border border-slate-700 bg-slate-800 p-4">
-          <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-400">
+        <section className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Game length
           </h2>
-          <p className="mb-3 text-xs text-slate-400">
+          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
             Default regulation length for full-report box scores. Match the
             inning count you use in MLB The Show's Vs. CPU settings.
           </p>
@@ -232,7 +248,7 @@ export function Settings() {
                   className={`min-w-[56px] rounded-lg border px-3 py-2 font-semibold transition ${
                     current === len
                       ? 'border-emerald-500 bg-emerald-700 text-white'
-                      : 'border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600'
+                      : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'
                   }`}
                   aria-label={`${len}-inning games`}
                   aria-pressed={current === len}
@@ -244,11 +260,11 @@ export function Settings() {
           </div>
         </section>
 
-        <section className="mb-6 rounded-xl border border-slate-700 bg-slate-800 p-4">
-          <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-400">
+        <section className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Save data
           </h2>
-          <p className="mb-3 text-xs text-slate-400">
+          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
             Your save lives in this browser's localStorage. If the browser
             clears site data, the save is lost. Export occasionally for backup.
           </p>
@@ -260,7 +276,7 @@ export function Settings() {
             >
               Export season
             </button>
-            <label className="cursor-pointer rounded-lg bg-slate-700 px-3 py-2 text-center font-semibold">
+            <label className="cursor-pointer rounded-lg bg-slate-200 px-3 py-2 text-center font-semibold text-slate-900 dark:bg-slate-700 dark:text-white">
               Import season
               <input
                 type="file"
@@ -282,11 +298,11 @@ export function Settings() {
           </button>
         </section>
 
-        <section className="rounded-xl border border-slate-700 bg-slate-800 p-4">
-          <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-400">
+        <section className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Team OVR overrides
           </h2>
-          <p className="mb-3 text-xs text-slate-400">
+          <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
             Set a team's OVR manually. Affects future sims only — past results
             stay as committed.
           </p>
@@ -297,7 +313,7 @@ export function Settings() {
               return (
                 <div
                   key={t.id}
-                  className="flex items-center justify-between gap-2 rounded-md border border-slate-700 bg-slate-800/50 p-2 text-sm"
+                  className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white p-2 text-sm dark:border-slate-700 dark:bg-slate-800/50"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{t.city} {t.name}</div>
@@ -322,7 +338,7 @@ export function Settings() {
                         setOvr(t.id, v)
                       }
                     }}
-                    className="w-16 rounded bg-slate-700 px-2 py-1 text-center"
+                    className="w-16 rounded bg-slate-100 px-2 py-1 text-center text-slate-900 dark:bg-slate-700 dark:text-white"
                   />
                 </div>
               )
@@ -331,5 +347,48 @@ export function Settings() {
         </section>
       </div>
     </main>
+  )
+}
+
+interface SwatchFieldProps {
+  label: string
+  hint: string
+  ariaLabel: string
+  value: string
+  onChange: (next: string) => void
+}
+
+/** Prominent color swatch + hex display. The swatch is large and labeled
+ *  so users discover the picker; the hex is a read-only-feeling display
+ *  that shows the chosen value. */
+function SwatchField({ label, hint, ariaLabel, value, onChange }: SwatchFieldProps) {
+  return (
+    <label className="block">
+      <span className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+        {label}
+      </span>
+      <div className="mt-1 text-[10px] text-slate-500 dark:text-slate-500">{hint}</div>
+      <div className="mt-2 flex items-center gap-3">
+        <div
+          className="relative h-16 w-16 shrink-0 rounded-lg border-2 border-slate-300 shadow-inner dark:border-slate-600"
+          style={{ backgroundColor: value }}
+        >
+          <input
+            type="color"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            aria-label={ariaLabel}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+        </div>
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          maxLength={7}
+          className="w-24 rounded-lg bg-white px-2 py-2 font-mono text-sm uppercase text-slate-900 dark:bg-slate-700 dark:text-slate-100"
+        />
+      </div>
+    </label>
   )
 }

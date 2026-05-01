@@ -14,7 +14,7 @@ import {
   type SeriesRound,
 } from '../domain/bracket'
 import { fullLabel, getUserDisplay } from '../domain/userDisplay'
-import { primaryButtonStyle, primaryTintStyle, themeForSeason } from './squadTheme'
+import { primaryButtonStyle, primaryTintStyle, themeForSeason, useThemeMode, readableOn } from './squadTheme'
 import {
   isUserStillAlive,
   simRemainingPostseason,
@@ -46,9 +46,12 @@ export function Bracket() {
     return buildBracket(season)
   }, [season])
 
+  const theme = themeForSeason(season)
+  useThemeMode(theme.mode)
+
   if (!season || !bracket) {
     return (
-      <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-slate-900 px-6 text-slate-100">
+      <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-white px-6 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
         <p>No active season.</p>
         <Link
           to="/"
@@ -76,23 +79,22 @@ export function Bracket() {
   const champion = season.champion ?? bracket.champion
   const userAlive = isUserStillAlive(season)
   const userTeamId = season.userTeamId
-  const theme = themeForSeason(season)
 
   return (
-    <main className="min-h-svh bg-slate-900 px-4 py-4 text-slate-100">
+    <main className="min-h-svh bg-white px-4 py-4 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <div className="mx-auto max-w-3xl">
         <header className="mb-4 flex items-center justify-between gap-3">
           <h1 className="text-xl font-semibold">Postseason Bracket</h1>
           <div className="flex gap-2">
             <Link
               to="/game"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-emerald-700 bg-emerald-900/40 px-3 text-sm font-semibold text-emerald-200 hover:bg-emerald-900/60 active:scale-[0.98]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-emerald-700 bg-emerald-100 px-3 text-sm font-semibold text-emerald-800 hover:bg-emerald-200 active:scale-[0.98] dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200 dark:hover:bg-emerald-900/60"
             >
               Game
             </Link>
             <Link
               to="/"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-slate-700 bg-slate-800 px-3 text-sm font-semibold text-slate-200 hover:bg-slate-700 active:scale-[0.98]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-slate-300 bg-slate-100 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-200 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
             >
               Home
             </Link>
@@ -100,15 +102,15 @@ export function Bracket() {
         </header>
 
         {champion && (
-          <div className="mb-6 rounded-2xl border border-amber-500 bg-amber-900/30 p-5 text-center">
-            <div className="text-xs uppercase tracking-wider text-amber-200">
+          <div className="mb-6 rounded-2xl border border-amber-500 bg-amber-100 p-5 text-center dark:bg-amber-900/30">
+            <div className="text-xs uppercase tracking-wider text-amber-800 dark:text-amber-200">
               World Series Champion
             </div>
-            <div className="mt-1 text-2xl font-bold text-amber-100">
+            <div className="mt-1 text-2xl font-bold text-amber-900 dark:text-amber-100">
               {fullLabel(season, champion)}
             </div>
             {champion === userTeamId && (
-              <div className="mt-1 text-sm text-amber-200">— that's you</div>
+              <div className="mt-1 text-sm text-amber-800 dark:text-amber-200">— that's you</div>
             )}
           </div>
         )}
@@ -141,9 +143,9 @@ export function Bracket() {
             return (
               <section
                 key={league}
-                className="rounded-xl border border-slate-700 bg-slate-800 p-4"
+                className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800"
               >
-                <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-400">
+                <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   {league} Seeds
                 </h2>
                 <ol className="space-y-1 text-sm">
@@ -158,12 +160,12 @@ export function Bracket() {
                         <span className="w-5 text-slate-500">#{i + 1}</span>
                         <span
                           className={`flex-1 truncate ${isUser ? 'font-semibold' : ''}`}
-                          style={isUser ? { color: theme.primary } : undefined}
+                          style={isUser ? { color: readableOn(theme.primary, theme.mode) } : undefined}
                         >
                           {fullLabel(season, teamId)}
                         </span>
                         {i < 2 && (
-                          <span className="rounded-full bg-amber-700/40 px-2 py-0.5 text-xs text-amber-200">
+                          <span className="rounded-full bg-amber-200 px-2 py-0.5 text-xs text-amber-900 dark:bg-amber-700/40 dark:text-amber-200">
                             Bye
                           </span>
                         )}
@@ -183,10 +185,10 @@ export function Bracket() {
             if (seriesInRound.length === 0) return null
             return (
               <section key={round}>
-                <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-400">
+                <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   {ROUND_NAMES[round]}
                   {bracket.currentRound === round && season.status === 'postseason' && (
-                    <span className="ml-2 rounded bg-amber-700 px-1.5 py-0.5 text-xs text-amber-100">
+                    <span className="ml-2 rounded bg-amber-600 px-1.5 py-0.5 text-xs text-white dark:bg-amber-700 dark:text-amber-100">
                       Current
                     </span>
                   )}
@@ -220,10 +222,10 @@ function SeriesCard({ series, season }: { series: Series; season: Season }) {
     <li
       className={`rounded-lg border p-3 text-sm ${
         userInSeries
-          ? 'border-emerald-700 bg-emerald-900/20'
+          ? 'border-emerald-700 bg-emerald-100 dark:bg-emerald-900/20'
           : series.winnerId
-            ? 'border-slate-700 bg-slate-800/40'
-            : 'border-slate-700 bg-slate-800/60'
+            ? 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/40'
+            : 'border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800/60'
       }`}
     >
       <div className="flex items-center justify-between">
@@ -251,7 +253,7 @@ function SeriesCard({ series, season }: { series: Series; season: Season }) {
       <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
         <span>Best of {series.bestOf}</span>
         {series.winnerId ? (
-          <span className="text-emerald-300">
+          <span className="text-emerald-700 dark:text-emerald-300">
             Winner: {fullLabel(season, series.winnerId)}
           </span>
         ) : (

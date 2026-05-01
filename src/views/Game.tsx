@@ -22,7 +22,7 @@ import { PostseasonGame } from './PostseasonGame'
 import { SimAheadModal } from './SimAheadModal'
 import { NavBar } from './NavBar'
 import { formatGameDate, formatGameTime } from './formatGameTime'
-import { primaryButtonStyle, themeForSeason } from './squadTheme'
+import { primaryButtonStyle, themeForSeason, useThemeMode } from './squadTheme'
 import {
   advancePastByes,
   getNextUserPostseasonGame,
@@ -41,9 +41,12 @@ export function Game() {
   const [simModalOpen, setSimModalOpen] = useState(false)
   const [simAheadOpen, setSimAheadOpen] = useState(false)
 
+  const theme = themeForSeason(season)
+  useThemeMode(theme.mode)
+
   if (!season) {
     return (
-      <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-slate-900 px-6 text-slate-100">
+      <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-white px-6 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
         <p className="text-lg">No active season.</p>
         <Link
           to="/setup"
@@ -60,15 +63,15 @@ export function Game() {
     const champion = season.champion ? TEAM_BY_ID.get(season.champion) : null
     const userWon = season.champion === season.userTeamId
     return (
-      <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-slate-900 px-6 text-slate-100">
-        <p className="text-sm uppercase tracking-wider text-slate-400">Season complete</p>
+      <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-white px-6 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+        <p className="text-sm uppercase tracking-wider text-slate-500 dark:text-slate-400">Season complete</p>
         <h1 className="text-center text-3xl font-semibold">
           {userWon ? 'You won the World Series!' : `${champion?.city} ${champion?.name} win the World Series`}
         </h1>
         <div className="mt-2 flex w-full max-w-xs flex-col gap-3">
           <Link
             to="/bracket"
-            className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-slate-700 px-6 py-3 font-semibold text-white active:scale-[0.98]"
+            className="inline-flex min-h-[48px] items-center justify-center rounded-lg bg-slate-200 px-6 py-3 font-semibold text-slate-900 active:scale-[0.98] dark:bg-slate-700 dark:text-white"
           >
             View final bracket
           </Link>
@@ -87,8 +90,8 @@ export function Game() {
   if (season.status === 'postseason') {
     if (!isUserStillAlive(season)) {
       return (
-        <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-slate-900 px-6 text-slate-100">
-          <p className="text-sm uppercase tracking-wider text-slate-400">Eliminated</p>
+        <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-white px-6 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+          <p className="text-sm uppercase tracking-wider text-slate-500 dark:text-slate-400">Eliminated</p>
           <h1 className="text-center text-2xl font-semibold">Your season is over.</h1>
           <Link
             to="/bracket"
@@ -108,12 +111,12 @@ export function Game() {
         round === 'DS' ? 'Division Series' :
         round === 'LCS' ? 'Championship Series' : 'current round'
       return (
-        <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-slate-900 px-6 text-slate-100">
-          <p className="text-sm uppercase tracking-wider text-amber-300">Bye round</p>
+        <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-white px-6 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+          <p className="text-sm uppercase tracking-wider text-amber-700 dark:text-amber-300">Bye round</p>
           <h1 className="text-center text-2xl font-semibold">
             You have a bye through the {roundLabel}.
           </h1>
-          <p className="max-w-sm text-center text-sm text-slate-400">
+          <p className="max-w-sm text-center text-sm text-slate-600 dark:text-slate-400">
             Sim out the {roundLabel} to find out your next opponent and start
             playing.
           </p>
@@ -131,7 +134,7 @@ export function Game() {
             </button>
             <Link
               to="/bracket"
-              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 text-sm font-semibold text-slate-200 hover:bg-slate-700 active:scale-[0.98]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-300 bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
             >
               See the bracket
             </Link>
@@ -140,9 +143,10 @@ export function Game() {
       )
     }
     return (
-      <main className="min-h-svh bg-slate-900 px-4 py-4 text-slate-100">
+      <main className="min-h-svh bg-white px-4 py-4 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
         <div className="mx-auto max-w-md">
           <NavBar
+            theme={theme}
             items={[
               { to: '/', label: 'Home' },
               { to: '/bracket', label: 'Bracket', accent: true },
@@ -154,7 +158,7 @@ export function Game() {
           <button
             type="button"
             onClick={() => setSimAheadOpen(true)}
-            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 text-sm font-semibold text-slate-200 hover:bg-slate-700 active:scale-[0.98]"
+            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-300 bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
           >
             Sim ahead…
           </button>
@@ -182,14 +186,13 @@ export function Game() {
     saveSeason(updated)
     setSeason(updated)
     return (
-      <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-slate-900 px-6 text-slate-100">
+      <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-white px-6 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
         <p className="text-lg">Regular season complete. Building the bracket...</p>
       </main>
     )
   }
 
   const userTeamMeta = TEAM_BY_ID.get(season.userTeamId)!
-  const theme = themeForSeason(season)
   const userIsHome = next.homeTeamId === season.userTeamId
   const opponentId = userIsHome ? next.awayTeamId : next.homeTeamId
   const opponentDisplay = getUserDisplay(season, opponentId)
@@ -286,10 +289,11 @@ export function Game() {
   }
 
   return (
-    <main className="min-h-svh bg-slate-900 px-4 py-4 text-slate-100">
+    <main className="min-h-svh bg-white px-4 py-4 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <div className="mx-auto max-w-md">
         {/* Top nav drawer-equivalent buttons (PLAN.md §7.2) */}
         <NavBar
+          theme={theme}
           items={[
             { to: '/', label: 'Home' },
             { to: '/standings', label: 'Standings' },
@@ -301,7 +305,7 @@ export function Game() {
         {/* Progress chip */}
         <div
           data-testid="progress-chip"
-          className="mb-4 rounded-full bg-slate-800 px-4 py-2 text-center text-xs text-slate-300"
+          className="mb-4 rounded-full bg-slate-100 px-4 py-2 text-center text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-300"
         >
           Game {playedCount + 1} of {season.userGames.length} · {wins}-{losses}
           {rankInfo && (
@@ -316,13 +320,13 @@ export function Game() {
         {/* Game card */}
         <section
           data-testid="game-card"
-          className="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg"
+          className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-lg dark:border-slate-700 dark:bg-slate-800"
         >
-          <div className="text-center text-xs uppercase tracking-wider text-slate-400">
+          <div className="text-center text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">
             {fullLabel(season, season.userTeamId)} {userIsHome ? 'host' : '@'}{' '}
             <span data-testid="opponent-name">{opponentDisplay.name}</span>
           </div>
-          <div className="mt-2 text-center text-base text-slate-300">
+          <div className="mt-2 text-center text-base text-slate-700 dark:text-slate-300">
             {opponentDisplay.city} {opponentDisplay.name} ({opponentWins}-{opponentLosses})
           </div>
           <div className="my-4 text-center text-2xl font-semibold">
@@ -330,7 +334,7 @@ export function Game() {
               {park?.name ?? next.homeTeamId}
             </span>
           </div>
-          <div className="text-center text-sm text-slate-400">
+          <div className="text-center text-sm text-slate-500 dark:text-slate-400">
             {formatGameDate(next.date, next.parkId)} · {formatGameTime(next.gameDate, next.parkId)}
           </div>
         </section>
@@ -355,7 +359,7 @@ export function Game() {
             />
           ) : (
             <div className="space-y-3">
-              <p className="text-center text-xs text-slate-400">
+              <p className="text-center text-xs text-slate-500 dark:text-slate-400">
                 Tap W or L to commit. Want to log innings, hits, errors? Open
                 the full box score.
               </p>
@@ -382,14 +386,14 @@ export function Game() {
                   setReportPanelOpen(false)
                   setBoxScoreOpen(true)
                 }}
-                className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 text-sm font-semibold text-slate-200 hover:bg-slate-700 active:scale-[0.98]"
+                className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-300 bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
               >
                 Full box score →
               </button>
               <button
                 type="button"
                 onClick={() => setReportPanelOpen(false)}
-                className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-4 text-sm font-semibold text-slate-300 hover:bg-slate-800 active:scale-[0.98]"
+                className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 Cancel
               </button>
@@ -400,14 +404,14 @@ export function Game() {
             <button
               type="button"
               onClick={() => setSimModalOpen(true)}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 text-sm font-semibold text-slate-200 hover:bg-slate-700 active:scale-[0.98]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-300 bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
             >
               Sim this game
             </button>
             <button
               type="button"
               onClick={() => setSimAheadOpen(true)}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 text-sm font-semibold text-slate-200 hover:bg-slate-700 active:scale-[0.98]"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-slate-300 bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
             >
               Sim ahead…
             </button>
@@ -417,7 +421,7 @@ export function Game() {
             <button
               type="button"
               onClick={handleUndo}
-              className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-amber-700 bg-amber-900/30 px-4 text-sm font-semibold text-amber-200 hover:bg-amber-900/50 active:scale-[0.98]"
+              className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-amber-700 bg-amber-100 px-4 text-sm font-semibold text-amber-800 hover:bg-amber-200 active:scale-[0.98] dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/50"
             >
               Undo last game
             </button>
@@ -427,9 +431,9 @@ export function Game() {
         {/* Sim warning modal */}
         {simModalOpen && (
           <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/70 p-4">
-            <div className="max-w-sm rounded-2xl bg-slate-800 p-6 text-slate-100">
+            <div className="max-w-sm rounded-2xl bg-white p-6 text-slate-900 dark:bg-slate-800 dark:text-slate-100">
               <h2 className="text-lg font-semibold">Sim this game?</h2>
-              <p className="mt-2 text-sm text-slate-300">
+              <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
                 Simming will apply a CPU-favored bias — you're more likely to
                 take the loss. Everything's self-reported anyway; this is just
                 a nudge toward actually playing.
@@ -438,7 +442,7 @@ export function Game() {
                 <button
                   type="button"
                   onClick={() => setSimModalOpen(false)}
-                  className="rounded-lg bg-slate-700 px-4 py-3 font-semibold"
+                  className="rounded-lg bg-slate-200 px-4 py-3 font-semibold text-slate-900 dark:bg-slate-700 dark:text-white"
                 >
                   Cancel
                 </button>

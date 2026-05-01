@@ -78,7 +78,7 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
       {/* Dramatic progress chip per PLAN.md §6.7 */}
       <div
         data-testid="progress-chip"
-        className="mb-4 rounded-full bg-amber-900/40 px-4 py-2 text-center text-xs text-amber-200"
+        className="mb-4 rounded-full bg-amber-100 px-4 py-2 text-center text-xs text-amber-900 dark:bg-amber-900/40 dark:text-amber-200"
       >
         {ROUND_NAMES[series.round]} · Game {gameNumber} · {seriesStateText(userWins, oppWins, opponent.name)}
         {stakes && <span className="ml-1 font-semibold">{stakes}</span>}
@@ -87,19 +87,19 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
       {/* Game card */}
       <section
         data-testid="game-card"
-        className="rounded-2xl border border-amber-700 bg-slate-800 p-5 shadow-lg"
+        className="rounded-2xl border border-amber-700 bg-slate-50 p-5 shadow-lg dark:bg-slate-800"
       >
-        <div className="text-center text-xs uppercase tracking-wider text-amber-300">
+        <div className="text-center text-xs uppercase tracking-wider text-amber-800 dark:text-amber-300">
           {userDisplay.name} {userIsHome ? 'host' : '@'}{' '}
           <span data-testid="opponent-name">{opponent.name}</span>
         </div>
-        <div className="mt-2 text-center text-base text-slate-300">
+        <div className="mt-2 text-center text-base text-slate-700 dark:text-slate-300">
           {fullLabel(season, opponentId)}
         </div>
         <div className="my-4 text-center text-2xl font-semibold">
           <span data-testid="venue-name">{park?.name ?? game.homeTeamId}</span>
         </div>
-        <div className="text-center text-sm text-slate-400">
+        <div className="text-center text-sm text-slate-500 dark:text-slate-400">
           {formatGameDate(game.date, game.parkId)} · {formatGameTime(game.gameDate, game.parkId)}
         </div>
       </section>
@@ -116,7 +116,7 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
           </button>
         ) : (
           <div className="space-y-3">
-            <p className="text-center text-xs text-slate-400">
+            <p className="text-center text-xs text-slate-500 dark:text-slate-400">
               Tap W or L to commit. Undo is available for the most recent
               postseason game if you misclick.
             </p>
@@ -140,7 +140,7 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
             <button
               type="button"
               onClick={() => setReportOpen(false)}
-              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-4 text-sm font-semibold text-slate-300 hover:bg-slate-800 active:scale-[0.98]"
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-100 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               Cancel
             </button>
@@ -151,7 +151,7 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
           <button
             type="button"
             onClick={handleUndo}
-            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-amber-700 bg-amber-900/30 px-4 text-sm font-semibold text-amber-200 hover:bg-amber-900/50 active:scale-[0.98]"
+            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-amber-700 bg-amber-100 px-4 text-sm font-semibold text-amber-800 hover:bg-amber-200 active:scale-[0.98] dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200 dark:hover:bg-amber-900/50"
           >
             Undo last game
           </button>
@@ -159,7 +159,7 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
 
         <Link
           to="/bracket"
-          className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 text-sm font-semibold text-slate-200 hover:bg-slate-700 active:scale-[0.98]"
+          className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-lg border border-slate-300 bg-slate-100 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-200 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
         >
           See the bracket
         </Link>

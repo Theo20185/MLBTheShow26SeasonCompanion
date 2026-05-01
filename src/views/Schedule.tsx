@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom'
 import { loadSeason, listSeasons } from '../domain/seasonStore'
 import { getUserDisplay } from '../domain/userDisplay'
 import { formatGameDate } from './formatGameTime'
+import { themeForSeason, useThemeMode } from './squadTheme'
 
 export function Schedule() {
   const season = useMemo(() => {
@@ -15,9 +16,12 @@ export function Schedule() {
     return active ? loadSeason(active.id) : null
   }, [])
 
+  const theme = themeForSeason(season)
+  useThemeMode(theme.mode)
+
   if (!season) {
     return (
-      <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-slate-900 px-6 text-slate-100">
+      <main className="flex min-h-svh flex-col items-center justify-center gap-4 bg-white px-6 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
         <p>No active season.</p>
         <Link
           to="/"
@@ -30,13 +34,13 @@ export function Schedule() {
   }
 
   return (
-    <main className="min-h-svh bg-slate-900 px-4 py-4 text-slate-100">
+    <main className="min-h-svh bg-white px-4 py-4 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <div className="mx-auto max-w-2xl">
         <header className="mb-4 flex items-center justify-between gap-3">
           <h1 className="text-xl font-semibold">Schedule</h1>
           <Link
             to="/game"
-            className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-emerald-700 bg-emerald-900/40 px-3 text-sm font-semibold text-emerald-200 hover:bg-emerald-900/60 active:scale-[0.98]"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-md border border-emerald-700 bg-emerald-100 px-3 text-sm font-semibold text-emerald-800 hover:bg-emerald-200 active:scale-[0.98] dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200 dark:hover:bg-emerald-900/60"
           >
             Back to game
           </Link>
@@ -58,13 +62,13 @@ export function Schedule() {
                     ? g.result?.homeScore !== undefined &&
                       ((userIsHome && g.result.homeScore > g.result.awayScore) ||
                         (!userIsHome && g.result.awayScore > g.result.homeScore))
-                      ? 'border-emerald-700 bg-emerald-900/30'
-                      : 'border-rose-700 bg-rose-900/30'
-                    : 'border-slate-700 bg-slate-800/40'
+                      ? 'border-emerald-700 bg-emerald-100 dark:bg-emerald-900/30'
+                      : 'border-rose-700 bg-rose-100 dark:bg-rose-900/30'
+                    : 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/40'
                 }`}
               >
                 <div>
-                  <div className="text-xs text-slate-400">
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
                     {formatGameDate(g.date, g.parkId)} · {userIsHome ? 'vs' : '@'} {opp.name}
                   </div>
                   <div className="text-sm">

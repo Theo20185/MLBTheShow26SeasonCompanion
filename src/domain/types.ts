@@ -101,11 +101,16 @@ export type GameLength = 3 | 5 | 7 | 9
 export const ALLOWED_GAME_LENGTHS: GameLength[] = [3, 5, 7, 9]
 export const DEFAULT_GAME_LENGTH: GameLength = 9
 
+/** App color scheme. Defaults to 'dark' when missing (legacy saves). */
+export type ThemeMode = 'light' | 'dark'
+export const DEFAULT_THEME_MODE: ThemeMode = 'dark'
+
 export interface Season {
   id: string
   year: number
   userTeamId: string         // the MLB team slot the user replaced (e.g., "NYY")
   userSquad?: UserSquad      // user's DD identity; missing on legacy saves (falls back to MLB team)
+  themeMode?: ThemeMode      // light/dark mode; defaults to 'dark' when missing
   defaultGameLength?: GameLength // user's preferred game length for full-report validation (default 9)
   startDate: string          // opening day for the user team
   currentDate: string

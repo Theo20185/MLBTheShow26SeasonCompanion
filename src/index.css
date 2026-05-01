@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Class-based dark mode: `dark:` variants activate when an ancestor (we
+   put it on <html>) has the `.dark` class. Toggled by useThemeMode in
+   squadTheme.ts based on the active season's themeMode. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Mobile-first base styles. The phone portrait viewport (360-430px) is our
    primary design target; everything scales up gracefully via Tailwind's
    sm/md/lg modifiers in component code. */

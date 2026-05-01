@@ -21,8 +21,10 @@ import {
 import {
   ALLOWED_GAME_LENGTHS,
   DEFAULT_GAME_LENGTH,
+  DEFAULT_THEME_MODE,
   type GameLength,
 } from '../domain/types'
+import { useThemeMode } from './squadTheme'
 
 const LEAGUES: LeagueId[] = ['AL', 'NL']
 const DIVISIONS: DivisionId[] = ['East', 'Central', 'West']
@@ -30,6 +32,11 @@ const DIVISIONS: DivisionId[] = ['East', 'Central', 'West']
 export function Setup() {
   const navigate = useNavigate()
   const [picked, setPicked] = useState<string | null>(null)
+
+  // Setup runs before a season exists, so honor the prior session's
+  // theme if it's still on documentElement; otherwise default dark.
+  const inferred = document.documentElement.classList.contains('dark') ? 'dark' : DEFAULT_THEME_MODE
+  useThemeMode(inferred)
 
   if (!picked) {
     return <TeamPicker onPick={setPicked} />
@@ -60,12 +67,12 @@ export function Setup() {
 
 function TeamPicker({ onPick }: { onPick: (teamId: string) => void }) {
   return (
-    <main className="min-h-svh bg-slate-900 px-4 py-6 text-slate-100">
+    <main className="min-h-svh bg-white px-4 py-6 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <div className="mx-auto max-w-3xl">
         <h1 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">
           Pick the team to replace
         </h1>
-        <p className="mt-2 text-center text-sm text-slate-400 md:text-base">
+        <p className="mt-2 text-center text-sm text-slate-600 md:text-base dark:text-slate-400">
           Your DD squad will take this MLB team's slot — schedule, division,
           and ballpark. You'll set up your squad's name and OVR next.
         </p>
@@ -78,7 +85,7 @@ function TeamPicker({ onPick }: { onPick: (teamId: string) => void }) {
               )
               return (
                 <section key={`${league}-${division}`}>
-                  <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-400">
+                  <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     {league} {division}
                   </h2>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
@@ -87,10 +94,10 @@ function TeamPicker({ onPick }: { onPick: (teamId: string) => void }) {
                         key={team.id}
                         type="button"
                         onClick={() => onPick(team.id)}
-                        className="min-h-[64px] rounded-lg border border-slate-700 bg-slate-800 p-3 text-left transition hover:border-slate-500 hover:bg-slate-700 active:scale-[0.98]"
+                        className="min-h-[64px] rounded-lg border border-slate-300 bg-slate-50 p-3 text-left transition hover:border-slate-400 hover:bg-slate-100 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-500 dark:hover:bg-slate-700"
                         aria-label={`Replace the ${team.name}`}
                       >
-                        <div className="text-xs text-slate-400">
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
                           {team.city}
                         </div>
                         <div className="text-base font-semibold">
@@ -165,52 +172,52 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
   }
 
   return (
-    <main className="min-h-svh bg-slate-900 px-4 py-6 text-slate-100">
+    <main className="min-h-svh bg-white px-4 py-6 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <div className="mx-auto max-w-md">
         <h1 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">
           Your Diamond Dynasty squad
         </h1>
-        <p className="mt-2 text-center text-sm text-slate-400">
+        <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-400">
           Replacing the <span className="font-semibold">{team.city} {team.name}</span>.
           Your squad keeps their schedule, division, and ballpark — but it's
           your team in the standings.
         </p>
 
         {inProgress.length > 0 && (
-          <div className="mt-4 rounded-xl border border-amber-700 bg-amber-900/30 p-4 text-sm text-amber-100">
-            <strong className="block text-amber-200">
+          <div className="mt-4 rounded-xl border border-amber-700 bg-amber-100 p-4 text-sm text-amber-900 dark:bg-amber-900/30 dark:text-amber-100">
+            <strong className="block text-amber-800 dark:text-amber-200">
               You have {inProgress.length === 1 ? 'an' : `${inProgress.length}`} in-progress {inProgress.length === 1 ? 'season' : 'seasons'}.
             </strong>
             Starting a new season will <em>delete</em> {inProgress.length === 1 ? 'it' : 'them'} — this can't be undone. If you want to keep playing your existing season, hit Back and tap Continue from the Home screen instead.
           </div>
         )}
 
-        <div className="mt-4 space-y-4 rounded-2xl border border-slate-700 bg-slate-800 p-5">
+        <div className="mt-4 space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800">
           <label className="block">
-            <span className="text-sm text-slate-300">Squad name</span>
+            <span className="text-sm text-slate-700 dark:text-slate-300">Squad name</span>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={32}
-              className="mt-1 w-full rounded-lg bg-slate-700 px-3 py-2 text-base"
+              className="mt-1 w-full rounded-lg bg-white px-3 py-2 text-base text-slate-900 dark:bg-slate-700 dark:text-slate-100"
             />
           </label>
 
           <label className="block">
-            <span className="text-sm text-slate-300">Abbreviation</span>
+            <span className="text-sm text-slate-700 dark:text-slate-300">Abbreviation</span>
             <input
               type="text"
               value={abbrev}
               onChange={(e) => setAbbrev(e.target.value.toUpperCase())}
               maxLength={4}
-              className="mt-1 w-32 rounded-lg bg-slate-700 px-3 py-2 text-base uppercase tracking-wider"
+              className="mt-1 w-32 rounded-lg bg-white px-3 py-2 text-base uppercase tracking-wider text-slate-900 dark:bg-slate-700 dark:text-slate-100"
             />
             <span className="ml-2 text-xs text-slate-500">2-4 letters</span>
           </label>
 
           <label className="block">
-            <span className="text-sm text-slate-300">Squad OVR</span>
+            <span className="text-sm text-slate-700 dark:text-slate-300">Squad OVR</span>
             <div className="mt-1 flex items-center gap-2">
               <input
                 type="number"
@@ -219,7 +226,7 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
                 max={99}
                 value={ovr}
                 onChange={(e) => setOvr(Number(e.target.value))}
-                className="w-24 rounded-lg bg-slate-700 px-3 py-2 text-base"
+                className="w-24 rounded-lg bg-white px-3 py-2 text-base text-slate-900 dark:bg-slate-700 dark:text-slate-100"
               />
               <span className="text-xs text-slate-500">
                 MLB roster's base OVR for this team is {defaultOvr}.
@@ -228,7 +235,7 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
           </label>
 
           <label className="block">
-            <span className="text-sm text-slate-300">Default game length (innings)</span>
+            <span className="text-sm text-slate-700 dark:text-slate-300">Default game length (innings)</span>
             <div className="mt-1 flex flex-wrap gap-2">
               {ALLOWED_GAME_LENGTHS.map((len) => (
                 <button
@@ -238,7 +245,7 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
                   className={`min-w-[56px] rounded-lg border px-3 py-2 font-semibold transition ${
                     gameLength === len
                       ? 'border-emerald-500 bg-emerald-700 text-white'
-                      : 'border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600'
+                      : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'
                   }`}
                   aria-label={`${len}-inning games`}
                   aria-pressed={gameLength === len}
@@ -253,20 +260,20 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
             </p>
           </label>
 
-          <div className="border-t border-slate-700 pt-4">
-            <span className="text-sm text-slate-300">Squad colors</span>
+          <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
+            <span className="text-sm text-slate-700 dark:text-slate-300">Squad colors</span>
             <p className="mt-1 text-xs text-slate-500">
               Defaults to the {team.name}' colors. Pick any other MLB team's
-              palette below, or fine-tune the swatches yourself.
+              palette below, or tap a swatch to fine-tune.
             </p>
             <label className="mt-3 block">
-              <span className="text-xs text-slate-400">Team color preset</span>
+              <span className="text-xs text-slate-600 dark:text-slate-400">Team color preset</span>
               <select
                 value={findTeamByColors(primaryColor, secondaryColor)?.id ?? '__custom'}
                 onChange={(e) => {
                   if (e.target.value !== '__custom') applyTeamPreset(e.target.value)
                 }}
-                className="mt-1 w-full rounded-lg bg-slate-700 px-3 py-2 text-base"
+                className="mt-1 w-full rounded-lg bg-white px-3 py-2 text-base text-slate-900 dark:bg-slate-700 dark:text-slate-100"
               >
                 <option value="__custom">Custom colors</option>
                 {[...TEAM_MAP].sort((a, b) => a.name.localeCompare(b.name)).map((t) => (
@@ -276,71 +283,34 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
                 ))}
               </select>
             </label>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <label className="block">
-                <span className="text-xs text-slate-400">Primary</span>
-                <div className="mt-1 flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={primaryColor}
-                    onChange={(e) => setPrimaryColor(e.target.value)}
-                    className="h-10 w-12 cursor-pointer rounded border border-slate-600 bg-transparent"
-                    aria-label="Primary squad color"
-                  />
-                  <input
-                    type="text"
-                    value={primaryColor}
-                    onChange={(e) => setPrimaryColor(e.target.value)}
-                    maxLength={7}
-                    className="flex-1 rounded-lg bg-slate-700 px-3 py-2 font-mono text-sm uppercase"
-                  />
-                </div>
-              </label>
-              <label className="block">
-                <span className="text-xs text-slate-400">Secondary</span>
-                <div className="mt-1 flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={secondaryColor}
-                    onChange={(e) => setSecondaryColor(e.target.value)}
-                    className="h-10 w-12 cursor-pointer rounded border border-slate-600 bg-transparent"
-                    aria-label="Secondary squad color"
-                  />
-                  <input
-                    type="text"
-                    value={secondaryColor}
-                    onChange={(e) => setSecondaryColor(e.target.value)}
-                    maxLength={7}
-                    className="flex-1 rounded-lg bg-slate-700 px-3 py-2 font-mono text-sm uppercase"
-                  />
-                </div>
-              </label>
-            </div>
-            <div className="mt-3 flex gap-2">
-              <div
-                className="flex h-10 flex-1 items-center justify-center rounded-lg text-xs font-semibold"
-                style={{ backgroundColor: primaryColor, color: '#fff' }}
-              >
-                Primary preview
-              </div>
-              <div
-                className="flex h-10 flex-1 items-center justify-center rounded-lg text-xs font-semibold"
-                style={{ backgroundColor: secondaryColor, color: '#fff' }}
-              >
-                Secondary preview
-              </div>
+            <p className="mt-3 text-xs italic text-slate-500">Tap a swatch below to pick a color.</p>
+            <div className="mt-2 grid grid-cols-2 gap-4">
+              <SetupSwatchField
+                label="Primary"
+                hint="Action buttons"
+                ariaLabel="Primary squad color"
+                value={primaryColor}
+                onChange={setPrimaryColor}
+              />
+              <SetupSwatchField
+                label="Secondary"
+                hint="Nav chips"
+                ariaLabel="Secondary squad color"
+                value={secondaryColor}
+                onChange={setSecondaryColor}
+              />
             </div>
           </div>
 
           {error && (
-            <p className="text-sm text-rose-400">{error}</p>
+            <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>
           )}
 
           <div className="grid grid-cols-2 gap-3 pt-2">
             <button
               type="button"
               onClick={onBack}
-              className="rounded-lg bg-slate-700 px-4 py-3 font-semibold"
+              className="rounded-lg bg-slate-200 px-4 py-3 font-semibold text-slate-900 dark:bg-slate-700 dark:text-white"
             >
               Back
             </button>
@@ -355,5 +325,45 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
         </div>
       </div>
     </main>
+  )
+}
+
+interface SetupSwatchFieldProps {
+  label: string
+  hint: string
+  ariaLabel: string
+  value: string
+  onChange: (next: string) => void
+}
+
+function SetupSwatchField({ label, hint, ariaLabel, value, onChange }: SetupSwatchFieldProps) {
+  return (
+    <label className="block">
+      <span className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+        {label}
+      </span>
+      <div className="mt-1 text-[10px] text-slate-500">{hint}</div>
+      <div className="mt-2 flex items-center gap-3">
+        <div
+          className="relative h-16 w-16 shrink-0 rounded-lg border-2 border-slate-300 shadow-inner dark:border-slate-600"
+          style={{ backgroundColor: value }}
+        >
+          <input
+            type="color"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            aria-label={ariaLabel}
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+          />
+        </div>
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          maxLength={7}
+          className="w-24 rounded-lg bg-white px-2 py-2 font-mono text-sm uppercase text-slate-900 dark:bg-slate-700 dark:text-slate-100"
+        />
+      </div>
+    </label>
   )
 }
