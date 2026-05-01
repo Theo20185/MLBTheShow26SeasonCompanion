@@ -84,7 +84,16 @@ export interface UserSquad {
   /** Secondary squad color (hex) — used for accents like the postseason
    *  bracket nav chip and progress chip backgrounds. Falls back to amber. */
   secondaryColor?: string
+  /** Override for the squad's home park. When unset, home games show the
+   *  bundled park for the replaced MLB team. The game time/date formatter
+   *  uses the override's timezone when it's a real preset; for custom
+   *  parks (created in The Show), timezone falls back to the original. */
+  homePark?: UserHomePark
 }
+
+export type UserHomePark =
+  | { kind: 'preset'; parkId: string }
+  | { kind: 'custom'; name: string }
 
 /** App-default colors used when the user hasn't picked any. Emerald + amber
  *  match the original (pre-theming) visual style. */

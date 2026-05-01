@@ -11,6 +11,7 @@ import {
 } from '../domain/seasonStore'
 import { effectiveOvr } from '../domain/simulator'
 import { TEAM_MAP, TEAM_BY_ID, findTeamByColors } from '../data/teamIdMap'
+import { BALLPARKS, BALLPARK_BY_TEAM_ID } from '../data/ballparks'
 import {
   ALLOWED_GAME_LENGTHS,
   DEFAULT_GAME_LENGTH,
@@ -20,6 +21,7 @@ import {
   type Season,
   type GameLength,
   type ThemeMode,
+  type UserHomePark,
 } from '../domain/types'
 import { useThemeMode } from './squadTheme'
 
@@ -67,6 +69,19 @@ export function Settings() {
 
   function setThemeMode(mode: ThemeMode) {
     const updated: Season = { ...season!, themeMode: mode }
+    saveSeason(updated)
+    setSeason(updated)
+  }
+
+  function setHomePark(homePark: UserHomePark | undefined) {
+    const currentSquad = season!.userSquad ?? {
+      name: TEAM_BY_ID.get(season!.userTeamId)?.name ?? season!.userTeamId,
+      abbrev: season!.userTeamId,
+    }
+    const updated: Season = {
+      ...season!,
+      userSquad: { ...currentSquad, homePark },
+    }
     saveSeason(updated)
     setSeason(updated)
   }
@@ -229,6 +244,11 @@ export function Settings() {
           </div>
         </section>
 
+        <HomeParkSection
+          season={season}
+          onChange={setHomePark}
+        />
+
         <section className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
           <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Game length
@@ -347,6 +367,108 @@ export function Settings() {
         </section>
       </div>
     </main>
+  )
+}
+
+interface HomeParkSectionProps {
+  season: Season
+  onChange: (homePark: UserHomePark | undefined) => void
+}
+
+function HomeParkSection({ season, onChange }: HomeParkSectionProps) {
+  const current = season.userSquad?.homePark
+  const initialMode: 'default' | 'preset' | 'custom' = current?.kind ?? 'default'
+  const defaultParkId = BALLPARK_BY_TEAM_ID.get(season.userTeamId)?.id ?? BALLPARKS[0].id
+  const [mode, setMode] = useState<'default' | 'preset' | 'custom'>(initialMode)
+  const [presetId, setPresetId] = useState<string>(
+    current?.kind === 'preset' ? current.parkId : defaultParkId
+  )
+  const [customName, setCustomName] = useState<string>(
+    current?.kind === 'custom' ? current.name : ''
+  )
+  const teamPark = BALLPARK_BY_TEAM_ID.get(season.userTeamId)
+
+  function handleMode(next: 'default' | 'preset' | 'custom') {
+    setMode(next)
+    if (next === 'default') {
+      onChange(undefined)
+    } else if (next === 'preset') {
+      onChange({ kind: 'preset', parkId: presetId })
+    } else {
+      const trimmed = customName.trim()
+      if (trimmed) onChange({ kind: 'custom', name: trimmed })
+    }
+  }
+
+  function handlePresetChange(next: string) {
+    setPresetId(next)
+    if (mode === 'preset') onChange({ kind: 'preset', parkId: next })
+  }
+
+  function handleCustomChange(next: string) {
+    setCustomName(next)
+    if (mode === 'custom') {
+      const trimmed = next.trim()
+      if (trimmed) onChange({ kind: 'custom', name: trimmed })
+    }
+  }
+
+  return (
+    <section className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+      <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        Home park
+      </h2>
+      <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
+        Defaults to {teamPark?.name ?? 'the replaced team\'s park'}. Pick a
+        different MLB park or name a custom park you built in The Show.
+      </p>
+      <div className="grid grid-cols-3 gap-2">
+        {(['default', 'preset', 'custom'] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => handleMode(m)}
+            aria-pressed={mode === m}
+            className={`min-h-[44px] rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+              mode === m
+                ? 'border-emerald-500 bg-emerald-600 text-white'
+                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'
+            }`}
+          >
+            {m === 'default' ? 'Default' : m === 'preset' ? 'Pick MLB park' : 'Custom park'}
+          </button>
+        ))}
+      </div>
+      {mode === 'preset' && (
+        <label className="mt-3 block">
+          <span className="text-xs text-slate-600 dark:text-slate-400">Home park preset</span>
+          <select
+            value={presetId}
+            onChange={(e) => handlePresetChange(e.target.value)}
+            className="mt-1 w-full rounded-lg bg-white px-3 py-2 text-base text-slate-900 dark:bg-slate-700 dark:text-slate-100"
+          >
+            {[...BALLPARKS].sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.city})
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {mode === 'custom' && (
+        <label className="mt-3 block">
+          <span className="text-xs text-slate-600 dark:text-slate-400">Custom park name</span>
+          <input
+            type="text"
+            value={customName}
+            onChange={(e) => handleCustomChange(e.target.value)}
+            maxLength={48}
+            placeholder="e.g. The Crater"
+            className="mt-1 w-full rounded-lg bg-white px-3 py-2 text-base text-slate-900 dark:bg-slate-700 dark:text-slate-100"
+          />
+        </label>
+      )}
+    </section>
   )
 }
 

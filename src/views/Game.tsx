@@ -16,7 +16,7 @@ import {
 } from '../domain/seasonStore'
 import { getDivisionRankForTeam } from '../domain/standings'
 import { TEAM_BY_ID } from '../data/teamIdMap'
-import { BALLPARK_BY_ID } from '../data/ballparks'
+import { resolveDisplayPark } from '../domain/homePark'
 import { BoxScorePanel } from './BoxScorePanel'
 import { PostseasonGame } from './PostseasonGame'
 import { SimAheadModal } from './SimAheadModal'
@@ -196,7 +196,7 @@ export function Game() {
   const userIsHome = next.homeTeamId === season.userTeamId
   const opponentId = userIsHome ? next.awayTeamId : next.homeTeamId
   const opponentDisplay = getUserDisplay(season, opponentId)
-  const park = BALLPARK_BY_ID.get(next.parkId)
+  const displayPark = resolveDisplayPark(season, next)
   const playedCount = season.userGames.filter((g) => g.status === 'played').length
   const userRecord = season.teamRecords.find((r) => r.teamId === season.userTeamId)!
   const wins = userRecord.firstHalfWins + userRecord.secondHalfWins
@@ -330,12 +330,10 @@ export function Game() {
             {opponentDisplay.city} {opponentDisplay.name} ({opponentWins}-{opponentLosses})
           </div>
           <div className="my-4 text-center text-2xl font-semibold">
-            <span data-testid="venue-name">
-              {park?.name ?? next.homeTeamId}
-            </span>
+            <span data-testid="venue-name">{displayPark.name}</span>
           </div>
           <div className="text-center text-sm text-slate-500 dark:text-slate-400">
-            {formatGameDate(next.date, next.parkId)} · {formatGameTime(next.gameDate, next.parkId)}
+            {formatGameDate(next.date, next.parkId, displayPark.timezone)} · {formatGameTime(next.gameDate, next.parkId, displayPark.timezone)}
           </div>
         </section>
 

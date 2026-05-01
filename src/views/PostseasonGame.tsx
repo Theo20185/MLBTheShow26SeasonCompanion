@@ -7,7 +7,7 @@
 
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BALLPARK_BY_ID } from '../data/ballparks'
+import { resolveDisplayPark } from '../domain/homePark'
 import {
   getNextUserPostseasonGame,
   getUserActiveSeries,
@@ -47,7 +47,7 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
   const opponentId = userIsHome ? game.awayTeamId : game.homeTeamId
   const opponent = getUserDisplay(season, opponentId)
   const userDisplay = getUserDisplay(season, userTeamId)
-  const park = BALLPARK_BY_ID.get(game.parkId)
+  const displayPark = resolveDisplayPark(season, game)
   const theme = themeForSeason(season)
 
   const wins = countWinsBy(series)
@@ -97,10 +97,10 @@ export function PostseasonGame({ season, onSeasonUpdate }: Props) {
           {fullLabel(season, opponentId)}
         </div>
         <div className="my-4 text-center text-2xl font-semibold">
-          <span data-testid="venue-name">{park?.name ?? game.homeTeamId}</span>
+          <span data-testid="venue-name">{displayPark.name}</span>
         </div>
         <div className="text-center text-sm text-slate-500 dark:text-slate-400">
-          {formatGameDate(game.date, game.parkId)} · {formatGameTime(game.gameDate, game.parkId)}
+          {formatGameDate(game.date, game.parkId, displayPark.timezone)} · {formatGameTime(game.gameDate, game.parkId, displayPark.timezone)}
         </div>
       </section>
 

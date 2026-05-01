@@ -60,6 +60,69 @@ describe('Settings — theme mode', () => {
   })
 })
 
+describe('Settings — home park override', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('renders the home park controls (default / pick / custom)', () => {
+    const season = createSeason({ userTeamId: 'NYY', rngSeed: 1 })
+    saveSeason(season)
+    renderSettings()
+    expect(screen.getByRole('button', { name: /^default$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^pick.*park$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^custom park$/i })).toBeInTheDocument()
+  })
+
+  it('persists a preset park override into season.userSquad.homePark', async () => {
+    const user = userEvent.setup()
+    const season = createSeason({ userTeamId: 'NYY', rngSeed: 1 })
+    saveSeason(season)
+    renderSettings()
+    await user.click(screen.getByRole('button', { name: /^pick.*park$/i }))
+    const select = screen.getByLabelText(/home park preset/i) as HTMLSelectElement
+    await user.selectOptions(select, 'coors-field')
+    await waitFor(() => {
+      const reloaded = loadSeason(season.id)!
+      expect(reloaded.userSquad?.homePark).toEqual({ kind: 'preset', parkId: 'coors-field' })
+    })
+  })
+
+  it('persists a custom park name into season.userSquad.homePark', async () => {
+    const user = userEvent.setup()
+    const season = createSeason({ userTeamId: 'NYY', rngSeed: 1 })
+    saveSeason(season)
+    renderSettings()
+    await user.click(screen.getByRole('button', { name: /^custom park$/i }))
+    const input = screen.getByLabelText(/custom park name/i)
+    await user.clear(input)
+    await user.type(input, 'The Crater')
+    await waitFor(() => {
+      const reloaded = loadSeason(season.id)!
+      expect(reloaded.userSquad?.homePark).toEqual({ kind: 'custom', name: 'The Crater' })
+    })
+  })
+
+  it('clears the override when the user clicks Default after setting one', async () => {
+    const user = userEvent.setup()
+    const season = createSeason({ userTeamId: 'NYY', rngSeed: 1 })
+    saveSeason({
+      ...season,
+      userSquad: {
+        name: 'Bombers',
+        abbrev: 'BMB',
+        homePark: { kind: 'preset', parkId: 'coors-field' },
+      },
+    })
+    renderSettings()
+    await user.click(screen.getByRole('button', { name: /^default$/i }))
+    await waitFor(() => {
+      const reloaded = loadSeason(season.id)!
+      expect(reloaded.userSquad?.homePark).toBeUndefined()
+    })
+  })
+})
+
 describe('Settings — squad colors swatch', () => {
   beforeEach(() => {
     localStorage.clear()

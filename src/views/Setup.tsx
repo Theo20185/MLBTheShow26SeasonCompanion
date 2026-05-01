@@ -23,7 +23,9 @@ import {
   DEFAULT_GAME_LENGTH,
   DEFAULT_THEME_MODE,
   type GameLength,
+  type UserHomePark,
 } from '../domain/types'
+import { BALLPARKS, BALLPARK_BY_TEAM_ID } from '../data/ballparks'
 import { useThemeMode } from './squadTheme'
 
 const LEAGUES: LeagueId[] = ['AL', 'NL']
@@ -46,7 +48,7 @@ export function Setup() {
     <SquadSetup
       teamId={picked}
       onBack={() => setPicked(null)}
-      onStart={(name, abbrev, ovr, gameLength, primaryColor, secondaryColor) => {
+      onStart={(name, abbrev, ovr, gameLength, primaryColor, secondaryColor, homePark) => {
         // Wipe any in-progress seasons before creating the new one.
         // Single-active-season model — without this, "New Season" silently
         // accumulates entries and Settings → Delete leaves "Continue" still
@@ -54,7 +56,7 @@ export function Setup() {
         deleteAllInProgressSeasons()
         const season = createSeason({
           userTeamId: picked,
-          userSquad: { name, abbrev, primaryColor, secondaryColor },
+          userSquad: { name, abbrev, primaryColor, secondaryColor, homePark },
           userSquadOvr: ovr,
           defaultGameLength: gameLength,
         })
@@ -125,7 +127,8 @@ interface SquadSetupProps {
     ovr: number,
     gameLength: GameLength,
     primaryColor: string,
-    secondaryColor: string
+    secondaryColor: string,
+    homePark: UserHomePark | undefined
   ) => void
 }
 
@@ -143,6 +146,11 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
   // Default to the replaced team's brand colors (most users will keep them).
   const [primaryColor, setPrimaryColor] = useState(team.colors.primary)
   const [secondaryColor, setSecondaryColor] = useState(team.colors.secondary)
+  // Home park override. 'default' keeps the bundled MLB park.
+  const defaultParkId = BALLPARK_BY_TEAM_ID.get(teamId)?.id ?? BALLPARKS[0].id
+  const [homeParkMode, setHomeParkMode] = useState<'default' | 'preset' | 'custom'>('default')
+  const [homeParkPresetId, setHomeParkPresetId] = useState<string>(defaultParkId)
+  const [homeParkCustomName, setHomeParkCustomName] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
 
   function applyTeamPreset(presetTeamId: string) {
@@ -167,8 +175,19 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
       setError('OVR must be between 40 and 99')
       return
     }
+    let homePark: UserHomePark | undefined
+    if (homeParkMode === 'preset') {
+      homePark = { kind: 'preset', parkId: homeParkPresetId }
+    } else if (homeParkMode === 'custom') {
+      const customName = homeParkCustomName.trim()
+      if (!customName) {
+        setError('Custom park name is required')
+        return
+      }
+      homePark = { kind: 'custom', name: customName }
+    }
     setError(null)
-    onStart(trimmedName, trimmedAbbrev, ovr, gameLength, primaryColor, secondaryColor)
+    onStart(trimmedName, trimmedAbbrev, ovr, gameLength, primaryColor, secondaryColor, homePark)
   }
 
   return (
@@ -300,6 +319,61 @@ function SquadSetup({ teamId, onBack, onStart }: SquadSetupProps) {
                 onChange={setSecondaryColor}
               />
             </div>
+          </div>
+
+          <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
+            <span className="text-sm text-slate-700 dark:text-slate-300">Home park</span>
+            <p className="mt-1 text-xs text-slate-500">
+              Defaults to {BALLPARK_BY_TEAM_ID.get(teamId)?.name ?? team.name}.
+              Pick a different MLB park or name your custom park (a stadium
+              you built and named in The Show).
+            </p>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {(['default', 'preset', 'custom'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setHomeParkMode(mode)}
+                  aria-pressed={homeParkMode === mode}
+                  className={`min-h-[44px] rounded-lg border px-3 py-2 text-sm font-semibold transition ${
+                    homeParkMode === mode
+                      ? 'border-emerald-500 bg-emerald-600 text-white'
+                      : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600'
+                  }`}
+                >
+                  {mode === 'default' ? 'Default' : mode === 'preset' ? 'Pick MLB park' : 'Custom park'}
+                </button>
+              ))}
+            </div>
+            {homeParkMode === 'preset' && (
+              <label className="mt-3 block">
+                <span className="text-xs text-slate-600 dark:text-slate-400">Home park preset</span>
+                <select
+                  value={homeParkPresetId}
+                  onChange={(e) => setHomeParkPresetId(e.target.value)}
+                  className="mt-1 w-full rounded-lg bg-white px-3 py-2 text-base text-slate-900 dark:bg-slate-700 dark:text-slate-100"
+                >
+                  {[...BALLPARKS].sort((a, b) => a.name.localeCompare(b.name)).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.city})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {homeParkMode === 'custom' && (
+              <label className="mt-3 block">
+                <span className="text-xs text-slate-600 dark:text-slate-400">Custom park name</span>
+                <input
+                  type="text"
+                  value={homeParkCustomName}
+                  onChange={(e) => setHomeParkCustomName(e.target.value)}
+                  maxLength={48}
+                  placeholder="e.g. The Crater"
+                  className="mt-1 w-full rounded-lg bg-white px-3 py-2 text-base text-slate-900 dark:bg-slate-700 dark:text-slate-100"
+                />
+              </label>
+            )}
           </div>
 
           {error && (

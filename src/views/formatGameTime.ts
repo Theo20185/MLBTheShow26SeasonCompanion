@@ -7,10 +7,15 @@ import { BALLPARK_BY_ID } from '../data/ballparks'
 
 /**
  * Formats a game's calendar date in the venue's local timezone.
- * Falls back to UTC midday if the park can't be resolved.
+ * Pass `timezoneOverride` (e.g. for a user home-park override) to
+ * bypass the bundled lookup.
  */
-export function formatGameDate(officialDate: string, parkId: string): string {
-  const tz = BALLPARK_BY_ID.get(parkId)?.timezone
+export function formatGameDate(
+  officialDate: string,
+  parkId: string,
+  timezoneOverride?: string
+): string {
+  const tz = timezoneOverride ?? BALLPARK_BY_ID.get(parkId)?.timezone
   // Anchor to noon UTC so DST quirks at midnight don't roll the date.
   const d = new Date(officialDate + 'T12:00:00Z')
   return d.toLocaleDateString('en-US', {
@@ -22,11 +27,15 @@ export function formatGameDate(officialDate: string, parkId: string): string {
 }
 
 /**
- * Formats a game's start time in the venue's local timezone.
- * Renders e.g. "7:08 PM" regardless of where the user is browsing from.
+ * Formats a game's start time in the venue's local timezone. Pass
+ * `timezoneOverride` to bypass the bundled park lookup.
  */
-export function formatGameTime(gameDateIso: string, parkId: string): string {
-  const tz = BALLPARK_BY_ID.get(parkId)?.timezone
+export function formatGameTime(
+  gameDateIso: string,
+  parkId: string,
+  timezoneOverride?: string
+): string {
+  const tz = timezoneOverride ?? BALLPARK_BY_ID.get(parkId)?.timezone
   const d = new Date(gameDateIso)
   return d.toLocaleTimeString('en-US', {
     hour: 'numeric',

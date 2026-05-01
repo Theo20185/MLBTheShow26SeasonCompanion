@@ -116,3 +116,52 @@ describe('Setup view — squad identity step', () => {
     expect(screen.getByText('Game Screen Stub')).toBeInTheDocument()
   })
 })
+
+describe('Setup view — home park selection', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('renders the home park controls (mode toggle, preset select, custom input)', async () => {
+    const user = userEvent.setup()
+    renderSetup()
+    await user.click(screen.getByRole('button', { name: /Replace the Yankees/i }))
+    expect(screen.getByRole('button', { name: /^default$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^pick.*park$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^custom park$/i })).toBeInTheDocument()
+  })
+
+  it('persists a preset park override into season.userSquad.homePark', async () => {
+    const user = userEvent.setup()
+    renderSetup()
+    await user.click(screen.getByRole('button', { name: /Replace the Yankees/i }))
+    await user.click(screen.getByRole('button', { name: /^pick.*park$/i }))
+    const select = screen.getByLabelText(/home park preset/i) as HTMLSelectElement
+    await user.selectOptions(select, 'coors-field')
+    await user.click(screen.getByRole('button', { name: /start season/i }))
+    const full = loadSeason(listSeasons()[0].id)!
+    expect(full.userSquad?.homePark).toEqual({ kind: 'preset', parkId: 'coors-field' })
+  })
+
+  it('persists a custom park name into season.userSquad.homePark', async () => {
+    const user = userEvent.setup()
+    renderSetup()
+    await user.click(screen.getByRole('button', { name: /Replace the Yankees/i }))
+    await user.click(screen.getByRole('button', { name: /^custom park$/i }))
+    const customInput = screen.getByLabelText(/custom park name/i)
+    await user.clear(customInput)
+    await user.type(customInput, 'The Crater')
+    await user.click(screen.getByRole('button', { name: /start season/i }))
+    const full = loadSeason(listSeasons()[0].id)!
+    expect(full.userSquad?.homePark).toEqual({ kind: 'custom', name: 'The Crater' })
+  })
+
+  it('leaves homePark undefined when the user keeps the Default mode', async () => {
+    const user = userEvent.setup()
+    renderSetup()
+    await user.click(screen.getByRole('button', { name: /Replace the Yankees/i }))
+    await user.click(screen.getByRole('button', { name: /start season/i }))
+    const full = loadSeason(listSeasons()[0].id)!
+    expect(full.userSquad?.homePark).toBeUndefined()
+  })
+})
