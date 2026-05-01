@@ -184,12 +184,13 @@ Two public data sources are used **only at build time**, never at runtime. The a
 
 ## 6. Feature Breakdown
 
-### 6.1 Setup (Team Picker)
-One screen. Grid of 30 MLB teams. User taps one → confirm → start.
-- Team selection locks the user's league, division, and their 162-game schedule (pulled from the bundled 2026 schedule — see 6.2).
+### 6.1 Setup (Team Picker + Squad Identity)
+Two-step flow.
+- **Step 1 — Pick the MLB team to replace.** Grid of 30 MLB teams. User taps one → continue. Team selection locks the user's league, division, and their 162-game schedule (pulled from the bundled 2026 schedule — see 6.2).
+- **Step 2 — Name your DD squad.** Squad name (default: the team's name), 2-4 letter abbreviation (default: the team id), squad OVR (default: the bundled team OVR), default game length (3 / 5 / 7 / 9), squad colors (defaults to the replaced team's brand palette — primary + secondary; see §6.9), home park (default / pick another MLB park / custom name; see §6.9).
 - **Season always starts at opening day** (in-sim `currentDate` = the first real 2026 game date for that team). The app does not skip ahead to the real-world date; the user replays the full season from the beginning. Confirmed design decision.
-- No OVR editing in setup — overrides live in Settings. Keep setup to one decision.
-- On confirm: build the `Season` record, filter the bundled schedule to this team's 162 games, initialize `TeamRecord[]` (0-0 for all 30) and `HeadToHead` (zeros), save to `localStorage`, jump straight to the Game screen.
+- OVR editing in setup is intentional (it's the squad's defining stat). Per-team OVR overrides for the *other 29* teams live in Settings.
+- On confirm: build the `Season` record (with `userSquad` populated from step 2), filter the bundled schedule to this team's 162 games, initialize `TeamRecord[]` (0-0 for all 30) and `HeadToHead` (zeros), save to `localStorage`, jump straight to the Game screen.
 
 ### 6.2 Schedule Loader (not a generator)
 - Bundled `src/data/schedule2026.json` contains every 2026 regular-season game (from the MLB Stats API — see 5.1). There is no schedule generation at runtime.
@@ -331,6 +332,21 @@ The bundled `Team.baseOvr` is only read when **creating** a new season — at th
 - Imported saves work identically to native saves regardless of the importer app's bundle version.
 - Changing the OVR derivation formula in a future app version affects only seasons created after the change. Existing seasons keep their original derived OVRs forever.
 
+### 6.9 Squad Personalization
+All cosmetic — none of these affect simulation, standings, or any persisted record. They live on `Season.userSquad` and `Season.themeMode` so they round-trip through export/import.
+
+**Light / dark mode** — `season.themeMode: 'light' | 'dark'` (default `'dark'`). Toggled in Settings. Applied via Tailwind's class-based `dark:` variant on `<html>` (custom-variant declared in `index.css`). The toggle re-applies the class via a hook so changes take effect immediately, no reload needed.
+
+**Squad colors** — `userSquad.primaryColor` + `userSquad.secondaryColor` (hex). Roles are fixed:
+- **Primary** drives action buttons (Report Result, Win, Sim this game, Begin Postseason, Continue on Home).
+- **Secondary** drives non-accent navigation chips (Standings, Schedule, Settings, Home in the NavBar). The amber accent on the postseason "Bracket" chip is preserved — secondary doesn't override that.
+- Defaults to the replaced MLB team's brand palette. Settings offers per-team presets and per-color swatches; the swatch is a 64×64 tappable square (custom HTML input + colored backdrop), labeled "Tap a swatch to pick a color" so the picker is unambiguously discoverable.
+- **Contrast safety:** any color used as text on the page background routes through `readableOn(color, mode)` which iteratively shifts the color toward white (dark mode) or black (light mode) until WCAG AA (4.5:1) is met. Buttons that put the squad color *behind* text use `contrastTextFor(hex)` to pick black or white text. Net: whatever color the user picks, the UI stays legible.
+
+**Home park override** — `userSquad.homePark?: { kind: 'preset', parkId } | { kind: 'custom', name }`. Default (undefined) shows the bundled MLB park.
+- **Preset** lets the user pick any of the 30 MLB ballparks as their home park. Display name and timezone come from the chosen park, so game time on the card renders in that park's local zone.
+- **Custom** lets the user type a free-text name for a park they built and named in The Show. Timezone falls back to the user team's bundled park (custom parks have no real-world TZ).
+- Resolved through a single helper `resolveDisplayPark(season, game)` so every home-game surface (regular-season Game card, postseason game card) shows the same name. Override only applies when the user team is the home team — away games always show the actual host park.
 
 ## 7. UX Flow
 
@@ -363,7 +379,7 @@ Modeled after MLB The Show's Mini Seasons: tight, linear, game-first. The user s
 
 - **Standings** — AL/NL × East/Central/West + wild card. Highlights user's team.
 - **Full Schedule** — list of the user's 162 games (past results, upcoming), strictly read-only. Each row shows the opponent and, for upcoming games, the opponent's **current** W/L record (read live from `TeamRecord`). For played games, shows the final score and the result.
-- **Settings** — OVR overrides (per team), Update Roster Data refresh (5.1), Export / Import save, Reset season, theme.
+- **Settings** — Appearance (light/dark mode), Squad colors (primary + secondary, with MLB team presets), Home park (default / pick MLB park / custom name), Game length, Save data (Export / Import / Delete), per-team OVR overrides, Update Roster Data refresh (§5.1).
 
 ### 7.3 Design principles
 
@@ -400,7 +416,8 @@ Every phase below (from phase 1 onward) follows the TDD loop from Section 3: wri
 10. **Postseason bracket.**
 11. **Export / import, multi-season management, settings (including OVR overrides and optional in-app "Update Roster Data" refresh from §5.1), polish.**
 12. **README as user guide:** flesh `README.md` into a full user guide (see §10.3). The README has been growing alongside features since phase 0; this phase polishes it, adds screenshots, cross-links to the live URL, and verifies it answers every common user question end-to-end.
-13. **Stretch:** PWA, theming, stat leaderboards, team-level season stats aggregation.
+13. **Personalization (shipped):** light/dark mode, squad colors with role-based application + WCAG AA contrast checks, home park override (preset or custom). See §6.9.
+14. **Stretch:** PWA, stat leaderboards, team-level season stats aggregation.
 
 **README discipline (applies from phase 0 onward):** every feature phase that adds user-visible behavior must update the relevant section of `README.md` in the same commit set. Don't let the user guide drift behind the app. Phase 12 is for polish, not first-time writing.
 
@@ -426,7 +443,7 @@ The repo `README.md` doubles as the public user guide — most visitors will rea
 2. **Quick start** — three steps: open the link → pick your team → start playing. Make it obvious there's no install, no signup, no save-syncing infrastructure to set up.
 3. **The core loop** — annotated screenshots of the Game screen, Report Result, Sim this game, Undo, the All-Star toast.
 4. **Reading the game info** — what each field on the Game card means (opponent, home/away, ballpark, in-sim date), and how to use the ballpark info when setting up the Vs. CPU game in The Show.
-5. **Settings** — OVR overrides, Update Roster Data, Export/Import, multi-save management. Explain the "frozen at creation" snapshot rule plainly.
+5. **Settings** — Appearance (light/dark), Squad colors with MLB presets, Home park (default / pick / custom), Game length, OVR overrides, Update Roster Data, Export/Import, multi-save management. Explain the "frozen at creation" snapshot rule plainly.
 6. **Standings & Postseason** — what the chip means, tiebreaker stack in plain English, how the bracket plays out.
 7. **Save data and your browser** — explain `localStorage` in user-friendly terms, the browser-wipe risk, and why exporting a save occasionally is a good habit.
 8. **FAQ** — likely questions: "Why doesn't my schedule match the real 2026 season?" (it does, that's the point), "Can I sim my games?" (yes, with a CPU-favored bias), "Does this work offline?" (yes, after the first load), "Will my season survive an app update?" (yes, OVRs are frozen at creation).

@@ -4,7 +4,7 @@ A free, browser-based companion app for MLB The Show 26 that lets you run a cust
 
 > **Live app:** **[https://theo20185.github.io/MLBTheShow26SeasonCompanion/](https://theo20185.github.io/MLBTheShow26SeasonCompanion/)**
 
-> **Status:** v1 feature-complete — full regular season, full postseason playthrough (game-by-game with lockstep parallel-series simming), bulk sim-ahead options, configurable game length, persistent saves with self-contained import/export, single-level Undo (regular season AND postseason), 199 unit tests + a 1050-run end-to-end playthrough harness for QA.
+> **Status:** v1 feature-complete — full regular season, full postseason playthrough (game-by-game with lockstep parallel-series simming), bulk sim-ahead options, configurable game length, light/dark mode + role-based squad colors with WCAG AA contrast checks, home park override (any MLB park or a custom name), persistent saves with self-contained import/export, single-level Undo (regular season AND postseason), 245 unit tests + a 1050-run end-to-end playthrough harness for QA.
 
 ---
 
@@ -81,6 +81,8 @@ When you pick a team to replace, the next step lets you set:
 - **Abbreviation** (2-4 letters, default: the team's abbreviation).
 - **OVR** (default: that team's roster OVR — set to your actual DD squad's OVR for accurate sims).
 - **Default game length** (3, 5, 7, or 9 innings — match the inning count you use in The Show's Vs. CPU settings).
+- **Squad colors** — primary (drives action buttons like Win / Sim / Report) and secondary (drives the nav chips at the top of the Game screen). Defaults to the replaced team's brand palette; pick a different MLB team's palette as a preset, or tap a swatch to fine-tune.
+- **Home park** — defaults to the replaced team's actual ballpark. You can pick a different MLB ballpark for your home games, or name a custom park (one you've built and named in The Show). The override shows up on every home game card so the ballpark you see in the app matches the one you picked in The Show.
 
 Your squad name shows up everywhere: the standings table, the schedule view, the game card, the bracket. The MLB team name only shows in places where it's useful for context (e.g., "Continue · Bombers — in for Yankees" on the Home screen).
 
@@ -90,9 +92,12 @@ Your squad name shows up everywhere: the standings table, the schedule view, the
 
 Available from the nav bar at the top of the Game screen:
 
+- **Appearance** — toggle between light and dark mode. Defaults to dark. The choice is saved on the season and applies immediately, no reload.
+- **Squad colors** — pick any MLB team's palette as a preset, or tap a swatch to choose any color. Primary is for action buttons; secondary is for nav chips. Whatever color you pick, the UI runs it through a WCAG AA contrast check so text and buttons stay readable.
+- **Home park** — keep the bundled park, pick a different MLB ballpark, or name a custom park you built in The Show. Updates everywhere a home game appears.
 - **Game length** — change the default inning count (3 / 5 / 7 / 9) any time. The full box score panel will validate against this.
 - **OVR overrides** — set any team's OVR manually. Base values come from the bundled MLB The Show 26 cards (computed from each team's top 25 player OVRs). Overrides only affect *future* simulations — past results stay as they happened.
-- **Export season** — downloads your save as a JSON file with everything embedded (squad identity, schedule, results, bracket, OVR snapshot). Save it somewhere safe; if the browser ever clears site data, this is your only backup.
+- **Export season** — downloads your save as a JSON file with everything embedded (squad identity, colors, theme, home park, schedule, results, bracket, OVR snapshot). Save it somewhere safe; if the browser ever clears site data, this is your only backup.
 - **Import season** — load a previously-exported save. Saves are self-contained, so they import cleanly into any future version of the app.
 - **Delete season** — start fresh. Only one in-progress season exists at a time; starting a new season after a delete (or via "New Season" on Home) replaces the existing one with a warning.
 
@@ -151,6 +156,12 @@ That's how MLB and The Show have it for 2026 — the franchise is in transition 
 **Why is the time on the game card different from what's on my phone's clock?**
 The card shows the game time in the **venue's local timezone**, not yours. A Boston home game shows ET; a Dodgers home game shows PT. Matches what you'd select in The Show.
 
+**My DD squad plays at a custom park I named in The Show. Can I show that on the card?**
+Yes. In Setup or Settings, set Home park → Custom and type the name. It'll appear on every home game card. Custom parks don't have a real timezone, so game times keep using your replaced team's TZ.
+
+**Can I change the colors / theme mid-season?**
+Yes. Settings has Appearance (light/dark) and Squad colors. Both apply immediately and persist across reloads.
+
 ---
 
 ## For developers
@@ -181,7 +192,7 @@ npx tsx scripts/analyzePostseasonTimes.ts  # past-5-years postseason start times
 
 The full design and build plan lives in [`PLAN.md`](./PLAN.md).
 
-199 unit tests + a 1050-playthrough end-to-end harness cover every layer: storage, normalizers, schedule loader, season factory, simulator, standings, tiebreakers, bracket seeding, postseason flow, sim-ahead engine, report/undo, and view rendering. The harness asserts 9 invariants (conservation of wins/losses, no over-played teams, user state machine, save round-trip, etc.) at every step of every playthrough — caught 5 real bugs during initial development that unit tests missed.
+245 unit tests + a 1050-playthrough end-to-end harness cover every layer: storage, normalizers, schedule loader, season factory, simulator, standings, tiebreakers, bracket seeding, postseason flow, sim-ahead engine, report/undo, view rendering, theming + WCAG contrast helpers, and the home park override resolver. The harness asserts 9 invariants (conservation of wins/losses, no over-played teams, user state machine, save round-trip, etc.) at every step of every playthrough — caught 5 real bugs during initial development that unit tests missed.
 
 ---
 
