@@ -5,7 +5,7 @@
 import { Link } from 'react-router-dom'
 import { listSeasons, loadSeason } from '../domain/seasonStore'
 import { TEAM_BY_ID } from '../data/teamIdMap'
-import { primaryButtonStyle, themeForSeason, useThemeMode } from './squadTheme'
+import { primaryButtonStyle, secondaryNavStyle, themeForSeason, useThemeMode } from './squadTheme'
 
 export function Home() {
   const seasons = listSeasons()
@@ -23,7 +23,8 @@ export function Home() {
     <main className="relative flex min-h-svh flex-col items-center justify-center gap-6 bg-white px-6 py-10 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       <Link
         to="/settings"
-        className="absolute right-4 top-4 inline-flex min-h-[44px] items-center justify-center rounded-md border border-slate-300 bg-slate-100 px-3 text-sm font-semibold text-slate-700 hover:bg-slate-200 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+        style={secondaryNavStyle(theme)}
+        className="absolute right-4 top-4 inline-flex min-h-[44px] items-center justify-center rounded-md border px-3 text-xs font-semibold uppercase tracking-wider active:scale-[0.98]"
       >
         Settings
       </Link>
