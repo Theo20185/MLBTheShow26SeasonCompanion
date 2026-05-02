@@ -21,13 +21,20 @@ export function Home() {
 
   return (
     <main className="relative flex min-h-svh flex-col items-center justify-center gap-6 bg-white px-6 py-10 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
-      <Link
-        to="/settings"
-        style={secondaryNavStyle(theme)}
-        className="absolute right-4 top-4 inline-flex min-h-[44px] items-center justify-center rounded-md border px-3 text-xs font-semibold uppercase tracking-wider active:scale-[0.98]"
-      >
-        Settings
-      </Link>
+      {/* Top bar shares the centered content's max-width so the chip
+          right-aligns with the CTA column below — same alignment rule
+          as the in-game NavBar (which sits inside max-w-md). */}
+      <div className="pointer-events-none absolute inset-x-0 top-4 px-6">
+        <div className="pointer-events-auto mx-auto flex w-full max-w-xs justify-end">
+          <Link
+            to="/settings"
+            style={secondaryNavStyle(theme)}
+            className="inline-flex min-h-[44px] items-center justify-center rounded-md border px-3 text-xs font-semibold uppercase tracking-wider active:scale-[0.98]"
+          >
+            Settings
+          </Link>
+        </div>
+      </div>
       <h1 className="text-center text-3xl font-semibold tracking-tight md:text-5xl">
         MLB The Show 26 Season Companion
       </h1>
