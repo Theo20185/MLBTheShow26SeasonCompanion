@@ -20,7 +20,7 @@ export function Home() {
   useThemeMode(theme.mode)
 
   return (
-    <main className="relative flex min-h-svh flex-col items-center justify-center gap-6 bg-white px-6 py-10 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+    <main className="relative flex min-h-svh flex-col items-center bg-white px-6 pb-10 pt-20 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
       {/* Top bar shares the panel's max-width so the chip right-aligns
           with the panel's right edge — same alignment rule as the
           in-game NavBar (which sits inside max-w-md). */}
