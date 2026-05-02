@@ -36,8 +36,9 @@ export function Home() {
         </div>
       </div>
 
-      {/* Content panel — same shape as the in-game game-card so the
-          landing screen looks like the same family. */}
+      {/* Content panel — same shape as the in-game game-card. Holds
+          the focal info (title + pitch) only. Actions stack below it,
+          mirroring how Win / Loss / Sim sit beneath the in-game card. */}
       <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-slate-50 p-6 shadow-lg dark:border-slate-700 dark:bg-slate-800">
         <h1 className="text-center text-2xl font-semibold tracking-tight md:text-3xl">
           MLB The Show 26 Season Companion
@@ -46,37 +47,37 @@ export function Home() {
           Run a custom 162-game Diamond Dynasty season. Pick a team, play the
           schedule Vs. CPU, and let the app handle the rest of the league.
         </p>
-
-        <div className="mx-auto mt-6 flex w-full max-w-xs flex-col gap-3">
-          {activeSeason && (
-            <Link
-              to="/game"
-              style={primaryButtonStyle(theme)}
-              className="rounded-lg px-6 py-4 text-center text-lg font-semibold shadow-lg transition active:scale-[0.98]"
-            >
-              Continue
-              <div className="mt-1 text-xs font-normal opacity-80">
-                {continueLabel}
-                {mlbSlot && activeSeason.userSquad && (
-                  <span className="opacity-75">
-                    {' '}— in for {mlbSlot.name}
-                  </span>
-                )}
-              </div>
-            </Link>
-          )}
-          <Link
-            to="/setup"
-            className={`rounded-lg ${
-              activeSeason
-                ? 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600'
-                : 'bg-emerald-600 text-white shadow-lg hover:bg-emerald-500'
-            } px-6 py-4 text-center text-lg font-semibold transition active:scale-[0.98]`}
-          >
-            New Season
-          </Link>
-        </div>
       </section>
+
+      <div className="mt-6 flex w-full max-w-md flex-col gap-3">
+        {activeSeason && (
+          <Link
+            to="/game"
+            style={primaryButtonStyle(theme)}
+            className="rounded-xl px-6 py-4 text-center text-lg font-semibold shadow-lg transition active:scale-[0.98]"
+          >
+            Continue
+            <div className="mt-1 text-xs font-normal opacity-80">
+              {continueLabel}
+              {mlbSlot && activeSeason.userSquad && (
+                <span className="opacity-75">
+                  {' '}— in for {mlbSlot.name}
+                </span>
+              )}
+            </div>
+          </Link>
+        )}
+        <Link
+          to="/setup"
+          className={`rounded-xl ${
+            activeSeason
+              ? 'border border-slate-300 bg-slate-100 text-slate-900 hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700'
+              : 'bg-emerald-600 text-white shadow-lg hover:bg-emerald-500'
+          } px-6 py-4 text-center text-lg font-semibold transition active:scale-[0.98]`}
+        >
+          New Season
+        </Link>
+      </div>
     </main>
   )
 }
