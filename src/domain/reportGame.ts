@@ -14,7 +14,6 @@ import {
   simulateNonUserGamesUpTo,
 } from './seasonEngine'
 import { simulateGame, effectiveOvr } from './simulator'
-import { startPostseason } from './postseason'
 import type { Game, GameResult, PreReportSnapshot, Season } from './types'
 
 export function getNextUserGame(season: Season): Game | null {
@@ -119,12 +118,12 @@ export function reportUserGame(
   updated = { ...updated, currentDate: next.date }
   updated = simulateNonUserGamesUpTo(updated, next.date)
 
-  // If that was the user's last regular-season game, flip the season
-  // to postseason so callers never see "status=regular but no next
-  // user game." Owns the transition in the engine; views don't have
-  // to special-case it.
+  // If that was the user's last regular-season game, hold the status
+  // at 'awaitingPostseason' so the UI can show the Final Standings
+  // reveal screen. The user explicitly hits "Begin Postseason" to
+  // call startPostseason() and flip into 'postseason'.
   if (updated.status === 'regular' && !updated.userGames.some((g) => g.status === 'scheduled')) {
-    updated = startPostseason(updated)
+    updated = { ...updated, status: 'awaitingPostseason' }
   }
 
   return updated

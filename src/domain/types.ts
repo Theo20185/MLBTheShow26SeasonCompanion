@@ -5,7 +5,15 @@ import type { NormalizedGame } from '../data/scheduleNormalize'
 import type { LeagueId, DivisionId } from '../data/teamIdMap'
 import type { Bracket } from './bracket'
 
-export type SeasonStatus = 'setup' | 'regular' | 'postseason' | 'complete'
+export type SeasonStatus =
+  | 'setup'
+  | 'regular'
+  /** Set by reportUserGame after the 162nd report, before the user
+   *  taps "Begin Postseason" on the Final Standings reveal screen.
+   *  startPostseason() flips this to 'postseason'. */
+  | 'awaitingPostseason'
+  | 'postseason'
+  | 'complete'
 
 export type GameKind = 'userRegular' | 'postseason'
 

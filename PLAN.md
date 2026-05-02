@@ -175,11 +175,12 @@ Two public data sources are used **only at build time**, never at runtime. The a
 - Default formula: average OVR of a team's top 25 players. Alternate: weighted average of top 8 pitchers (rotation + closer) and top 12 position players. The chosen formula lives in one function with tests pinning expected outputs for a known input set, so we can tune it later without fear.
 - User override in Settings always wins and is stored per team on the `Team` record (or per-season override on `Season`).
 
-**Optional in-app refresh (non-blocking, opt-in, bulk-override model):**
-- Settings → "Update Roster Data" button. Fetches the latest roster update at runtime if online, computes new team OVRs from the incoming player data, and on user confirmation writes them as **bulk entries into `season.ovrOverrides`**. `season.rosterSnapshotId` never changes — the season is frozen against its original snapshot for life.
+**Optional in-app refresh (shipped):**
+- Settings → **Refresh roster data** button. At runtime, fetches the live-series cards from the same MLB The Show 26 API used at build time, runs them through `normalizeRosterResponse` + `computeTeamOvr` (shared with the build script), and produces a `RosterRefreshPlan` of per-team deltas vs the season's current effective OVRs.
+- A diff modal lists every team that would change, sorted by largest absolute delta. The user reviews and either applies (bulk-writes the new OVRs into `season.ovrOverrides`) or cancels. `season.baseOvrSnapshot` is never touched — the season's frozen-at-creation snapshot stays intact.
 - This mirrors how Mini Seasons works: a season is locked to the roster snapshot it was created with, regardless of later roster updates shipped by the game. Explicit, predictable, and stable across app updates.
 - Consequence (accepted): no automatic simulation of mid-season trades, injuries, or roster churn. This is a DD game-series mode, not a Franchise simulator.
-- Silent no-op when offline. Never required — the bundled snapshot is always sufficient.
+- Errors (offline, CORS, API down) are surfaced inline in Settings — never silent. The bundled snapshot is always sufficient if the refresh fails.
 - After writing bulk overrides, the user can still edit individual team OVRs in Settings (the per-team override UI writes to the same `ovrOverrides` map).
 
 ## 6. Feature Breakdown
@@ -224,15 +225,15 @@ The app's home base — where the user spends 95% of their time. Single-screen, 
 - On confirm: the league simulator (§6.5) runs this one game in **user-disadvantage mode** — the user team's effective OVR is reduced by a tunable `userSimPenalty` (default `-10`) for this roll only. Result is recorded like a played game (status: `played`, `quick: true`, with a flag `simmed: true` so standings can split it out per §6.6).
 - After confirming, the rest of the post-report flow (currentDate advance, league sim, next game, toast) runs exactly as if the user had reported normally.
 
-**Post-report transition (confirmed: auto-advance with fading toast):**
+**Post-report transition (auto-advance with fading toast — shipped):**
 - On report, the app: writes a `lastSnapshot` (§4) capturing pre-report state, advances `currentDate` past this game, sims all other league games up to the new `currentDate`, updates `TeamRecord` + `HeadToHead`, and **immediately shows the next game screen**.
-- A fading toast appears briefly over the new screen: `"April 22 → April 25 · 18 league games simmed"` and vanishes after ~2 seconds. The user can keep playing through it; no tap required.
-- If the user's standings position changed meaningfully (division lead gained/lost, wild-card in/out), the toast mentions it.
+- A fading toast (`<Toast>`, fixed at the top of the Game viewport) appears briefly over the new screen: `"Apr 22 → Apr 25 · 18 league games simmed"` and vanishes after ~2 seconds (4 seconds for the All-Star break variant). The user can keep playing through it; no tap required. Built by `buildReportToast(before, after)` from the pre/post Season state — pure function so it's unit-tested separately from the toast component.
+- The toast also fires for bulk sim-ahead (e.g. `"Apr 1 → Jul 14 · 1142 league games simmed"`) and for the postseason commit path.
 
-**All-Star break (no interstitial screen, just a longer-lived toast):**
-- When `currentDate` advances across a gap of ≥2 consecutive days with no scheduled games anywhere in the league (the real 2026 schedule has one such gap — mid-July), the fading toast is replaced by a slightly longer one: `"All-Star Break · July 14–16 · Resuming July 17"`. No extra taps required; the next game screen is already showing.
+**All-Star break (longer-lived toast variant — shipped):**
+- When the date advance crosses a multi-day gap with very few intervening games sim'd (≥2 day jump and ≤5 simmed games — heuristic in `buildReportToast`), the toast text is replaced with `"All-Star Break · resuming Jul 17"` and held ~4 seconds instead of 2. No interstitial screen, no extra taps; the next game screen is already showing.
 - We don't model the All-Star Game itself. DD cards can't be routed into it and there's no voting sim — the break is purely a calendar acknowledgement.
-- Detected automatically by gap length in the bundled schedule, so no hardcoded dates.
+- Detected by gap length + low simmed-count heuristic, so no hardcoded dates.
 
 **Undo (persistent, single-level):**
 - A small **Undo last game** link is visible on the Game screen whenever `lastSnapshot` exists. No timer — it stays until the user reports the next game, at which point the snapshot is overwritten.
@@ -241,7 +242,9 @@ The app's home base — where the user spends 95% of their time. Single-screen, 
 - Minimal recalc: the league sims that ran between the old `currentDate` and the new one are replayed deterministically from the restored `rngSeed` the next time the user reports — not proactively, so Undo is essentially instant.
 
 **Secondary actions** — header menu / drawer, not on the main card:
-- Standings, Full Schedule (the user's 162 games — past results + upcoming), Settings (OVR overrides, export/import save, reset).
+- Standings, Full Schedule (the user's 162 games — past results + upcoming), Settings.
+
+**Settings is universally accessible (shipped).** The Settings link appears on the Home screen, the Game NavBar, the Bracket header, and the Standings/Schedule headers — anywhere the user might want to flip dark mode or back up a save. Settings itself handles two states cleanly: **always-on** sections (Appearance, Save data list with per-save Export/Delete + Import) render regardless of save state; **save-specific** sections (Squad colors, Home park, Game length, Update Roster Data, Team OVR overrides, Delete this season) only render when a season is loaded.
 
 ### 6.4 Report Result
 Two paths, with different commit UX (both surfaced on the Game screen per §6.3):
@@ -289,7 +292,7 @@ After reporting, the app:
 
 Division-winner designation uses the same stack — if two division rivals finish tied, tiebreakers decide which is the division winner and which is a wild card.
 
-**Transition into postseason.** After the user reports their 162nd regular-season game, a **Final Standings + Bracket Reveal** screen shows league champs, division winners, wild cards, byes, and round-1 matchups. One button: **Begin Postseason** (or **Sim to World Series** if the user's team missed the playoffs).
+**Transition into postseason (shipped).** After the 162nd regular-season report, the engine sets `season.status = 'awaitingPostseason'` (the bracket has not been built yet). Game.tsx routes that status to a dedicated **Final Standings + Bracket Reveal** screen showing all six division tables and the projected AL/NL playoff seeds with byes flagged. The screen has one CTA: **Begin Postseason**, which calls `startPostseason()` and flips status to `'postseason'`. If the user team missed the playoffs, the CTA becomes **Sim to World Series** (calls `simRemainingPostseason` after `startPostseason`).
 
 **Game screen in postseason.** Same layout, same report UX, same Undo, same "Sim this game" action. Differences:
 - Progress chip reformats in a dramatic Mini Seasons–style voice: `WCS · Game 2 · Yankees lead 1-0 · Win today to survive`, `ALCS · Game 7 · Tied 3-3 · Winner goes to the World Series`, etc. Specific phrasing is a content concern — the structure is: round · game number · series state · stakes line when dramatic.
@@ -331,6 +334,14 @@ The bundled `Team.baseOvr` is only read when **creating** a new season — at th
 - Mid-season bundled-roster updates (via app deploy) do not silently shift running seasons.
 - Imported saves work identically to native saves regardless of the importer app's bundle version.
 - Changing the OVR derivation formula in a future app version affects only seasons created after the change. Existing seasons keep their original derived OVRs forever.
+
+### 6.10 App-level Preferences
+A separate `localStorage` key (`app:prefs`) holds user preferences that should persist across saves and apply even when no save is loaded — currently just `themeMode`. Resolved with a layered rule by `resolveActiveThemeMode(season)`:
+- If a season is loaded AND `season.themeMode` is set, the season override wins.
+- Otherwise the app pref applies.
+- Otherwise the hardcoded default (`'dark'`).
+
+When the user toggles theme inside a loaded season, both the season and the app pref are written so the app pref always tracks the user's most recent choice. This means the landing screen, Settings on Home, and any future no-save surface always reflect what the user picked last.
 
 ### 6.9 Squad Personalization
 All cosmetic — none of these affect simulation, standings, or any persisted record. They live on `Season.userSquad` and `Season.themeMode` so they round-trip through export/import.
@@ -379,7 +390,7 @@ Modeled after MLB The Show's Mini Seasons: tight, linear, game-first. The user s
 
 - **Standings** — AL/NL × East/Central/West + wild card. Highlights user's team.
 - **Full Schedule** — list of the user's 162 games (past results, upcoming), strictly read-only. Each row shows the opponent and, for upcoming games, the opponent's **current** W/L record (read live from `TeamRecord`). For played games, shows the final score and the result.
-- **Settings** — Appearance (light/dark mode), Squad colors (primary + secondary, with MLB team presets), Home park (default / pick MLB park / custom name), Game length, Save data (Export / Import / Delete), per-team OVR overrides, Update Roster Data refresh (§5.1).
+- **Settings** — accessible from anywhere. Always-on: Appearance (light/dark mode), Save data (saved-seasons list with per-save Export/Delete + Import). Save-specific (only when a season is loaded): Squad colors (primary + secondary, with MLB team presets), Home park (default / pick MLB park / custom name), Game length, Update Roster Data refresh (§5.1), per-team OVR overrides, Delete this season.
 
 ### 7.3 Design principles
 

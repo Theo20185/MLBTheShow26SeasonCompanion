@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { Settings } from './Settings'
 import { createSeason } from '../domain/createSeason'
-import { saveSeason, loadSeason } from '../domain/seasonStore'
+import { saveSeason, loadSeason, listSeasons } from '../domain/seasonStore'
+import { loadAppPrefs } from '../domain/appPrefs'
 
 function renderSettings() {
   return render(
@@ -35,7 +36,7 @@ describe('Settings — theme mode', () => {
     expect(dark.getAttribute('aria-pressed')).toBe('true')
   })
 
-  it('persists themeMode = "light" to localStorage when the user clicks Light', async () => {
+  it('persists themeMode to BOTH the season and the app pref when a season is loaded', async () => {
     const user = userEvent.setup()
     const season = createSeason({ userTeamId: 'NYY', rngSeed: 1 })
     saveSeason(season)
@@ -44,6 +45,7 @@ describe('Settings — theme mode', () => {
     await waitFor(() => {
       const reloaded = loadSeason(season.id)!
       expect(reloaded.themeMode).toBe('light')
+      expect(loadAppPrefs().themeMode).toBe('light')
     })
   })
 
@@ -56,7 +58,49 @@ describe('Settings — theme mode', () => {
     await waitFor(() => {
       const reloaded = loadSeason(season.id)!
       expect(reloaded.themeMode).toBe('dark')
+      expect(loadAppPrefs().themeMode).toBe('dark')
     })
+  })
+})
+
+describe('Settings — accessible without an active season', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('renders Appearance section even when no save exists', () => {
+    renderSettings()
+    expect(screen.getByRole('button', { name: /^dark$/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^light$/i })).toBeInTheDocument()
+  })
+
+  it('writes only to app prefs when there is no active season', async () => {
+    const user = userEvent.setup()
+    renderSettings()
+    await user.click(screen.getByRole('button', { name: /^light$/i }))
+    await waitFor(() => {
+      expect(loadAppPrefs().themeMode).toBe('light')
+    })
+    expect(listSeasons()).toHaveLength(0)
+  })
+
+  it('hides save-specific sections when no season is loaded', () => {
+    renderSettings()
+    expect(screen.queryByText(/squad colors/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/^home park$/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/^game length$/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/team ovr overrides/i)).not.toBeInTheDocument()
+  })
+
+  it('shows the Save data list with all saved seasons (multi-save)', () => {
+    const a = createSeason({ userTeamId: 'NYY', rngSeed: 1 })
+    saveSeason(a)
+    const b = createSeason({ userTeamId: 'LAD', rngSeed: 2 })
+    saveSeason(b)
+    renderSettings()
+    expect(screen.getByText(/saved seasons/i)).toBeInTheDocument()
+    // Each saved season has an Export button row.
+    expect(screen.getAllByRole('button', { name: /export/i }).length).toBeGreaterThanOrEqual(2)
   })
 })
 

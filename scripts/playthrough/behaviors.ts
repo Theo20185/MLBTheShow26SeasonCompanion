@@ -45,11 +45,19 @@ function withDecide(
     step: (season: Season): Season | null => {
       if (season.status === 'complete') return null
 
+      // Awaiting postseason: the engine paused after the 162nd report
+      // so the UI can show the Final Standings reveal. The harness has
+      // no UI, so just advance.
+      if (season.status === 'awaitingPostseason') {
+        return startPostseason(season)
+      }
+
       // Regular season.
       if (season.status === 'regular') {
         const nextGame = getNextUserGame(season)
         if (!nextGame) {
-          // No regular-season games left — flip to postseason.
+          // Defensive: shouldn't happen now (engine sets awaitingPostseason
+          // first), but kept for migrating in-flight saves.
           return startPostseason(season)
         }
         const rng = mulberry32(season.rngSeed ^ 0xa11ce)

@@ -8,8 +8,8 @@ import type { Season, ThemeMode } from '../domain/types'
 import {
   DEFAULT_SQUAD_PRIMARY,
   DEFAULT_SQUAD_SECONDARY,
-  DEFAULT_THEME_MODE,
 } from '../domain/types'
+import { resolveActiveThemeMode } from '../domain/appPrefs'
 
 export interface SquadTheme {
   primary: string
@@ -26,14 +26,16 @@ export const PAGE_BG: Record<ThemeMode, string> = {
 }
 
 /**
- * Resolves the active theme for a season — falls back to app defaults
- * when squad colors aren't set (legacy saves, or squads created before
- * theming shipped).
+ * Resolves the active theme. Colors fall back to defaults when no
+ * squad is set; theme mode follows the layered resolution:
+ *   season.themeMode (when set) > app pref > hardcoded default ('dark')
+ * so the user's preference persists across saves and applies on the
+ * landing screen with no save loaded.
  */
 export function themeForSeason(season: Season | null): SquadTheme {
   const primary = season?.userSquad?.primaryColor ?? DEFAULT_SQUAD_PRIMARY
   const secondary = season?.userSquad?.secondaryColor ?? DEFAULT_SQUAD_SECONDARY
-  const mode = season?.themeMode ?? DEFAULT_THEME_MODE
+  const mode = resolveActiveThemeMode(season)
   return {
     primary,
     primaryText: contrastTextFor(primary),

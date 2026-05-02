@@ -21,8 +21,11 @@ import { BoxScorePanel } from './BoxScorePanel'
 import { PostseasonGame } from './PostseasonGame'
 import { SimAheadModal } from './SimAheadModal'
 import { NavBar } from './NavBar'
+import { FinalStandingsReveal } from './FinalStandingsReveal'
 import { formatGameDate, formatGameTime } from './formatGameTime'
 import { primaryButtonStyle, themeForSeason, useThemeMode } from './squadTheme'
+import { Toast, type ToastMessage } from './Toast'
+import { buildReportToast } from '../domain/reportToast'
 import {
   advancePastByes,
   getNextUserPostseasonGame,
@@ -40,6 +43,7 @@ export function Game() {
   const [boxScoreOpen, setBoxScoreOpen] = useState(false)
   const [simModalOpen, setSimModalOpen] = useState(false)
   const [simAheadOpen, setSimAheadOpen] = useState(false)
+  const [toast, setToast] = useState<ToastMessage | null>(null)
 
   const theme = themeForSeason(season)
   useThemeMode(theme.mode)
@@ -84,6 +88,13 @@ export function Game() {
         </div>
       </main>
     )
+  }
+
+  // Awaiting postseason: user reported their 162nd regular-season game
+  // and the engine paused at this state. Show the Final Standings reveal
+  // so the user can review the field before the bracket starts.
+  if (season.status === 'awaitingPostseason') {
+    return <FinalStandingsReveal season={season} onSeasonUpdate={setSeason} />
   }
 
   // Postseason mode.
@@ -144,6 +155,7 @@ export function Game() {
     }
     return (
       <main className="min-h-svh bg-white px-4 py-4 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+        <Toast message={toast} onDismiss={() => setToast(null)} />
         <div className="mx-auto max-w-md">
           <NavBar
             theme={theme}
@@ -154,7 +166,13 @@ export function Game() {
               { to: '/settings', label: 'Settings' },
             ]}
           />
-          <PostseasonGame season={season} onSeasonUpdate={setSeason} />
+          <PostseasonGame
+            season={season}
+            onSeasonUpdate={(updated) => {
+              if (season) showToastFor(season, updated)
+              setSeason(updated)
+            }}
+          />
           <button
             type="button"
             onClick={() => setSimAheadOpen(true)}
@@ -167,6 +185,7 @@ export function Game() {
               season={season}
               onClose={() => setSimAheadOpen(false)}
               onSimmed={(updated) => {
+                if (season) showToastFor(season, updated)
                 saveSeason(updated)
                 setSeason(updated)
                 setSimAheadOpen(false)
@@ -206,7 +225,13 @@ export function Game() {
   const opponentLosses = opponentRecord.firstHalfLosses + opponentRecord.secondHalfLosses
   const rankInfo = getDivisionRankForTeam(season, season.userTeamId)
 
+  function showToastFor(before: Season, after: Season) {
+    const next = buildReportToast(before, after)
+    if (next) setToast(next)
+  }
+
   function commit(updated: Season) {
+    if (season) showToastFor(season, updated)
     saveSeason(updated)
     setSeason(updated)
     setReportPanelOpen(false)
@@ -290,6 +315,7 @@ export function Game() {
 
   return (
     <main className="min-h-svh bg-white px-4 py-4 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+      <Toast message={toast} onDismiss={() => setToast(null)} />
       <div className="mx-auto max-w-md">
         {/* Top nav drawer-equivalent buttons (PLAN.md §7.2) */}
         <NavBar

@@ -4,7 +4,7 @@ A free, browser-based companion app for MLB The Show 26 that lets you run a cust
 
 > **Live app:** **[https://theo20185.github.io/MLBTheShow26SeasonCompanion/](https://theo20185.github.io/MLBTheShow26SeasonCompanion/)**
 
-> **Status:** v1 feature-complete — full regular season, full postseason playthrough (game-by-game with lockstep parallel-series simming), bulk sim-ahead options, configurable game length, light/dark mode + role-based squad colors with WCAG AA contrast checks, home park override (any MLB park or a custom name), persistent saves with self-contained import/export, single-level Undo (regular season AND postseason), 245 unit tests + a 1050-run end-to-end playthrough harness for QA.
+> **Status:** v1 feature-complete — full regular season, full postseason playthrough (game-by-game with lockstep parallel-series simming), Final Standings reveal between regular season and postseason, fading post-report toast (with All-Star Break variant), bulk sim-ahead options, configurable game length, runtime "Refresh roster data" pull from The Show API with diff preview, light/dark mode + role-based squad colors with WCAG AA contrast checks, home park override (any MLB park or a custom name), Settings accessible from anywhere (including the landing screen), multi-save list, persistent saves with self-contained import/export, single-level Undo (regular season AND postseason), 273 unit tests + a 1050-run end-to-end playthrough harness for QA.
 
 ---
 
@@ -41,6 +41,7 @@ The Game screen is where you'll spend ~95% of your time:
 - **Sim ahead…** — bulk-sim options (see below).
 - **Undo last game** appears after every report, in case you mis-tapped. Single level deep — undoing only restores the *most recent* report. Works in both regular season and postseason.
 - **Full box score** option opens a per-inning entry grid with hits + errors and a Confirm & Save step.
+- **Post-report toast** — a brief recap fades in at the top of the screen after every report: e.g. `Apr 22 → Apr 25 · 18 league games simmed`. The All-Star Break gets a longer-lived variant: `All-Star Break · resuming Jul 17`. Auto-dismisses; nothing to tap.
 
 ---
 
@@ -56,7 +57,9 @@ Want to skip ahead? The "Sim ahead…" link gives you three options, each with a
 
 ## Postseason
 
-When the regular season ends, the app builds the playoff bracket and walks you through it the same way as the regular season — game by game.
+After your 162nd regular-season report, you land on a **Final Standings** screen showing all six divisions and the projected AL/NL playoff seeds (with byes flagged). One tap on **Begin Postseason** builds the bracket and starts the postseason loop. If your squad missed the playoffs, the screen offers **Sim to World Series** instead.
+
+Once you're in, the app walks you through the bracket the same way as the regular season — game by game.
 
 **2026 MLB format:**
 - 3 division winners + 3 wild cards per league.
@@ -90,16 +93,21 @@ Your squad name shows up everywhere: the standings table, the schedule view, the
 
 ## Settings
 
-Available from the nav bar at the top of the Game screen:
+Settings is reachable from anywhere — the Home screen, the Game nav bar, every secondary view. Sections fall into two tiers:
 
-- **Appearance** — toggle between light and dark mode. Defaults to dark. The choice is saved on the season and applies immediately, no reload.
+**Always available** (with or without a save loaded):
+
+- **Appearance** — toggle between light and dark mode. Defaults to dark. The choice persists across saves and applies even on the landing screen with no save loaded. When you toggle theme inside a save, it's written to both the save and the app-level pref so a fresh save inherits your latest preference.
+- **Save data** — full list of saved seasons with status (Setup / Regular / Postseason / Complete). Each row has its own Export and Delete buttons. There's also a global Import button at the bottom that loads any previously-exported save.
+
+**Available when a season is loaded:**
+
 - **Squad colors** — pick any MLB team's palette as a preset, or tap a swatch to choose any color. Primary is for action buttons; secondary is for nav chips. Whatever color you pick, the UI runs it through a WCAG AA contrast check so text and buttons stay readable.
 - **Home park** — keep the bundled park, pick a different MLB ballpark, or name a custom park you built in The Show. Updates everywhere a home game appears.
 - **Game length** — change the default inning count (3 / 5 / 7 / 9) any time. The full box score panel will validate against this.
-- **OVR overrides** — set any team's OVR manually. Base values come from the bundled MLB The Show 26 cards (computed from each team's top 25 player OVRs). Overrides only affect *future* simulations — past results stay as they happened.
-- **Export season** — downloads your save as a JSON file with everything embedded (squad identity, colors, theme, home park, schedule, results, bracket, OVR snapshot). Save it somewhere safe; if the browser ever clears site data, this is your only backup.
-- **Import season** — load a previously-exported save. Saves are self-contained, so they import cleanly into any future version of the app.
-- **Delete season** — start fresh. Only one in-progress season exists at a time; starting a new season after a delete (or via "New Season" on Home) replaces the existing one with a warning.
+- **Refresh roster data** — pulls the latest live-series cards from the MLB The Show 26 API at runtime, recomputes every team's OVR with the same formula used at build time, and shows you a diff before applying. Bulk-applies as overrides on the season; the frozen base snapshot stays intact. Requires a network connection. This is the only runtime network call in the app.
+- **Team OVR overrides** — set any team's OVR manually. Overrides only affect *future* simulations — past results stay as they happened.
+- **Delete this season** — destroys the active save.
 
 ---
 
@@ -160,7 +168,13 @@ The card shows the game time in the **venue's local timezone**, not yours. A Bos
 Yes. In Setup or Settings, set Home park → Custom and type the name. It'll appear on every home game card. Custom parks don't have a real timezone, so game times keep using your replaced team's TZ.
 
 **Can I change the colors / theme mid-season?**
-Yes. Settings has Appearance (light/dark) and Squad colors. Both apply immediately and persist across reloads.
+Yes. Settings has Appearance (light/dark) and Squad colors. Both apply immediately and persist across reloads. Theme also persists across saves — your last choice applies on the landing screen before any save is loaded.
+
+**The Show pushed a roster update. How do I get the new OVRs?**
+Open Settings → Refresh roster data. The app pulls the latest cards live, recomputes every team's OVR using the same formula as at build time, and shows you a diff. Apply or cancel. Your base snapshot stays frozen — the new values become overrides you can clear later if you want.
+
+**I have multiple saves — how do I manage them?**
+Settings shows a list of every saved season with per-row Export and Delete. The "Active" badge marks whichever one Continue and the Game screen will load.
 
 ---
 
@@ -192,7 +206,7 @@ npx tsx scripts/analyzePostseasonTimes.ts  # past-5-years postseason start times
 
 The full design and build plan lives in [`PLAN.md`](./PLAN.md).
 
-245 unit tests + a 1050-playthrough end-to-end harness cover every layer: storage, normalizers, schedule loader, season factory, simulator, standings, tiebreakers, bracket seeding, postseason flow, sim-ahead engine, report/undo, view rendering, theming + WCAG contrast helpers, and the home park override resolver. The harness asserts 9 invariants (conservation of wins/losses, no over-played teams, user state machine, save round-trip, etc.) at every step of every playthrough — caught 5 real bugs during initial development that unit tests missed.
+273 unit tests + a 1050-playthrough end-to-end harness cover every layer: storage, normalizers, schedule loader, season factory, simulator, standings, tiebreakers, bracket seeding, postseason flow, sim-ahead engine, report/undo, view rendering, theming + WCAG contrast helpers, the home park override resolver, the post-report toast builder (with All-Star variant), the Final Standings reveal transition, the runtime roster-refresh planner, and the app-level pref + multi-save Settings UI. The harness asserts 9 invariants (conservation of wins/losses, no over-played teams, user state machine, save round-trip, etc.) at every step of every playthrough — caught 5 real bugs during initial development that unit tests missed.
 
 ---
 
