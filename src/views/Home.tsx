@@ -16,6 +16,13 @@ export function Home() {
     : undefined
   const continueLabel = activeSeason?.userSquad?.name
     ?? (mlbSlot ? `${mlbSlot.city} ${mlbSlot.name}` : 'Continue')
+  // Only show the "— in for Team" hint when the user actually renamed
+  // their squad. If they kept the MLB team's name, the hint reads as
+  // "Giants — in for Giants" which is immersion-breaking.
+  const showReplacedHint =
+    !!mlbSlot &&
+    !!activeSeason?.userSquad &&
+    activeSeason.userSquad.name.trim().toLowerCase() !== mlbSlot.name.toLowerCase()
   const theme = themeForSeason(activeSeason)
   useThemeMode(theme.mode)
 
@@ -59,9 +66,9 @@ export function Home() {
             Continue
             <div className="mt-1 text-xs font-normal opacity-80">
               {continueLabel}
-              {mlbSlot && activeSeason.userSquad && (
+              {showReplacedHint && (
                 <span className="opacity-75">
-                  {' '}— in for {mlbSlot.name}
+                  {' '}— in for {mlbSlot!.name}
                 </span>
               )}
             </div>
